@@ -5,6 +5,8 @@ import com.example.app.auth.exception.UnauthenticatedException;
 import com.example.app.category.exception.CategoryBadRequestException;
 import com.example.app.category.exception.CategoryConflictException;
 import com.example.app.category.exception.CategoryNotFoundException;
+import com.example.app.ticket.exception.TicketBadRequestException;
+import com.example.app.ticket.exception.TicketNotFoundException;
 import com.example.app.user.exception.UserNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
@@ -65,6 +67,22 @@ public class GlobalExceptionHandler {
 		HttpServletRequest request
 	) {
 		return build(HttpStatus.NOT_FOUND, "USER_NOT_FOUND", ex.getMessage(), request);
+	}
+
+	@ExceptionHandler(TicketNotFoundException.class)
+	public ResponseEntity<ApiErrorResponse> handleTicketNotFound(
+		TicketNotFoundException ex,
+		HttpServletRequest request
+	) {
+		return build(HttpStatus.NOT_FOUND, "TICKET_NOT_FOUND", ex.getMessage(), request);
+	}
+
+	@ExceptionHandler(TicketBadRequestException.class)
+	public ResponseEntity<ApiErrorResponse> handleTicketBadRequest(
+		TicketBadRequestException ex,
+		HttpServletRequest request
+	) {
+		return build(HttpStatus.BAD_REQUEST, "TICKET_BAD_REQUEST", ex.getMessage(), request);
 	}
 
 	@ExceptionHandler(MethodArgumentNotValidException.class)
