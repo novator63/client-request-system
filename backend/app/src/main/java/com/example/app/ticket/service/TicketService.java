@@ -4,6 +4,7 @@ import com.example.app.auth.exception.UnauthenticatedException;
 import com.example.app.category.entity.Category;
 import com.example.app.category.exception.CategoryNotFoundException;
 import com.example.app.category.repository.CategoryRepository;
+import com.example.app.history.service.HistoryService;
 import com.example.app.ticket.dto.request.AssignTicketRequest;
 import com.example.app.ticket.dto.request.CreateTicketRequest;
 import com.example.app.ticket.dto.request.UpdateTicketClassificationRequest;
@@ -37,17 +38,20 @@ public class TicketService {
 	private final CategoryRepository categoryRepository;
 	private final UserRepository userRepository;
 	private final TicketMapper ticketMapper;
+	private final HistoryService historyService;
 
 	public TicketService(
 		TicketRepository ticketRepository,
 		CategoryRepository categoryRepository,
 		UserRepository userRepository,
-		TicketMapper ticketMapper
+		TicketMapper ticketMapper,
+		HistoryService historyService
 	) {
 		this.ticketRepository = ticketRepository;
 		this.categoryRepository = categoryRepository;
 		this.userRepository = userRepository;
 		this.ticketMapper = ticketMapper;
+		this.historyService = historyService;
 	}
 
 	@Transactional
@@ -65,6 +69,7 @@ public class TicketService {
 		ticket.setClosedAt(null);
 
 		Ticket savedTicket = ticketRepository.save(ticket);
+		historyService.recordTicketCreated(savedTicket, author);
 		return ticketMapper.toResponse(savedTicket);
 	}
 
@@ -104,12 +109,14 @@ public class TicketService {
 
 	@Transactional
 	public TicketResponse assign(Long id, AssignTicketRequest request) {
+		User actor = getCurrentUserEntity();
 		Ticket ticket = findTicketById(id);
 		ensureTicketIsNotClosed(ticket);
 
 		User assignee = userRepository.findById(request.assigneeId())
 			.orElseThrow(UserNotFoundException::new);
 
+		TicketStatus previousStatus = ticket.getStatus();
 		ticket.setAssignee(assignee);
 
 		if (ticket.getStatus() == TicketStatus.NEW) {
@@ -117,24 +124,34 @@ public class TicketService {
 		}
 
 		Ticket savedTicket = ticketRepository.save(ticket);
+		historyService.recordAssigned(savedTicket, actor, assignee);
+		if (previousStatus != savedTicket.getStatus()) {
+			historyService.recordStatusChanged(savedTicket, actor, previousStatus, savedTicket.getStatus());
+		}
 		return ticketMapper.toResponse(savedTicket);
 	}
 
 	@Transactional
 	public TicketResponse updateClassification(Long id, UpdateTicketClassificationRequest request) {
+		User actor = getCurrentUserEntity();
 		Ticket ticket = findTicketById(id);
 		ensureTicketIsNotClosed(ticket);
 
+		String oldCategoryName = ticket.getCategory().getName();
 		Category category = findCategoryById(request.categoryId());
 		ticket.setCategory(category);
 		ticket.setPriority(request.priority());
 
 		Ticket savedTicket = ticketRepository.save(ticket);
+		if (!oldCategoryName.equals(savedTicket.getCategory().getName())) {
+			historyService.recordCategoryChanged(savedTicket, actor, oldCategoryName, savedTicket.getCategory().getName());
+		}
 		return ticketMapper.toResponse(savedTicket);
 	}
 
 	@Transactional
 	public TicketResponse updateStatus(Long id, UpdateTicketStatusRequest request) {
+		User actor = getCurrentUserEntity();
 		Ticket ticket = findTicketById(id);
 		ensureTicketIsNotClosed(ticket);
 
@@ -142,17 +159,22 @@ public class TicketService {
 			throw new TicketBadRequestException("Use POST /tickets/{id}/close to close a ticket");
 		}
 
+		TicketStatus oldStatus = ticket.getStatus();
 		ticket.setStatus(request.status());
 		if (request.status() != TicketStatus.CLOSED) {
 			ticket.setClosedAt(null);
 		}
 
 		Ticket savedTicket = ticketRepository.save(ticket);
+		if (oldStatus != savedTicket.getStatus()) {
+			historyService.recordStatusChanged(savedTicket, actor, oldStatus, savedTicket.getStatus());
+		}
 		return ticketMapper.toResponse(savedTicket);
 	}
 
 	@Transactional
 	public TicketResponse close(Long id) {
+		User actor = getCurrentUserEntity();
 		Ticket ticket = findTicketById(id);
 
 		if (ticket.getStatus() == TicketStatus.CLOSED) {
@@ -163,6 +185,7 @@ public class TicketService {
 		ticket.setClosedAt(LocalDateTime.now());
 
 		Ticket savedTicket = ticketRepository.save(ticket);
+		historyService.recordClosed(savedTicket, actor);
 		return ticketMapper.toResponse(savedTicket);
 	}
 

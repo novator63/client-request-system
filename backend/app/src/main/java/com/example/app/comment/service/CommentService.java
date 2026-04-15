@@ -6,6 +6,7 @@ import com.example.app.comment.dto.response.CommentResponse;
 import com.example.app.comment.entity.Comment;
 import com.example.app.comment.mapper.CommentMapper;
 import com.example.app.comment.repository.CommentRepository;
+import com.example.app.history.service.HistoryService;
 import com.example.app.ticket.entity.Ticket;
 import com.example.app.ticket.exception.TicketBadRequestException;
 import com.example.app.ticket.exception.TicketNotFoundException;
@@ -29,17 +30,20 @@ public class CommentService {
 	private final TicketRepository ticketRepository;
 	private final UserRepository userRepository;
 	private final CommentMapper commentMapper;
+	private final HistoryService historyService;
 
 	public CommentService(
 		CommentRepository commentRepository,
 		TicketRepository ticketRepository,
 		UserRepository userRepository,
-		CommentMapper commentMapper
+		CommentMapper commentMapper,
+		HistoryService historyService
 	) {
 		this.commentRepository = commentRepository;
 		this.ticketRepository = ticketRepository;
 		this.userRepository = userRepository;
 		this.commentMapper = commentMapper;
+		this.historyService = historyService;
 	}
 
 	@Transactional
@@ -53,6 +57,7 @@ public class CommentService {
 		comment.setAuthor(author);
 
 		Comment savedComment = commentRepository.save(comment);
+		historyService.recordCommentAdded(ticket, author);
 		return commentMapper.toResponse(savedComment);
 	}
 
