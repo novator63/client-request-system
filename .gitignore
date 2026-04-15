@@ -1,0 +1,36 @@
+# ===== Maven =====
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+
+# Maven Wrapper (оставляем jar!)
+.mvn/wrapper/maven-wrapper.jar
+
+# ===== Logs =====
+*.log
+
+# ===== OS =====
+.DS_Store
+Thumbs.db
+
+# ===== Env / secrets =====
+.env
+application-local.properties
+application-secret.properties
+
+# ===== IDE =====
+.vscode/
+.idea/
+*.iml
+
+# ===== Java =====
+*.class
+
+# ===== Temp =====
+*.tmp
+*.swp
