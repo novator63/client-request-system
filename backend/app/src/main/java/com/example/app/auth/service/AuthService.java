@@ -2,15 +2,14 @@ package com.example.app.auth.service;
 
 import com.example.app.auth.dto.request.LoginRequest;
 import com.example.app.auth.dto.response.LoginResponse;
+import com.example.app.auth.exception.InvalidCredentialsException;
 import com.example.app.user.dto.response.UserResponse;
 import com.example.app.user.entity.User;
 import com.example.app.user.repository.UserRepository;
 import com.example.app.user.service.UserService;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 
@@ -36,10 +35,10 @@ public class AuthService {
 	@Transactional
 	public LoginResponse login(LoginRequest request) {
 		User user = userRepository.findByEmail(request.email())
-			.orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid email or password"));
+			.orElseThrow(InvalidCredentialsException::new);
 
 		if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
-			throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid email or password");
+			throw new InvalidCredentialsException();
 		}
 
 		String token = jwtService.generateToken(user);
