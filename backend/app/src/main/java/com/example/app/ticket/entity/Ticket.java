@@ -61,6 +61,9 @@ public class Ticket {
 	@Column(name = "closed_at")
 	private LocalDateTime closedAt;
 
+	@Column(name = "due_at", nullable = false)
+	private LocalDateTime dueAt;
+
 	public Ticket() {
 	}
 
@@ -151,6 +154,14 @@ public class Ticket {
 
 	public void setClosedAt(LocalDateTime closedAt) {
 		this.closedAt = closedAt;
+	}
+
+	public LocalDateTime getDueAt() {
+		return dueAt;
+	}
+
+	public void setDueAt(LocalDateTime dueAt) {
+		this.dueAt = dueAt;
 	}
 
 	@PrePersist

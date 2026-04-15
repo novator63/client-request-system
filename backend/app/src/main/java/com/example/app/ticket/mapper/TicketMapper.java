@@ -32,7 +32,8 @@ public class TicketMapper {
 			ticket.getCategory().getName(),
 			ticket.getCreatedAt(),
 			ticket.getUpdatedAt(),
-			ticket.getClosedAt()
+			ticket.getClosedAt(),
+			ticket.getDueAt()
 		);
 	}
 
@@ -47,7 +48,8 @@ public class TicketMapper {
 			ticket.getCategory().getId(),
 			ticket.getCategory().getName(),
 			ticket.getCreatedAt(),
-			ticket.getUpdatedAt()
+			ticket.getUpdatedAt(),
+			ticket.getDueAt()
 		);
 	}
 

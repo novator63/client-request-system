@@ -5,6 +5,7 @@ import com.example.app.category.entity.Category;
 import com.example.app.category.exception.CategoryNotFoundException;
 import com.example.app.category.repository.CategoryRepository;
 import com.example.app.history.service.HistoryService;
+import com.example.app.sla.service.SlaService;
 import com.example.app.ticket.dto.request.AssignTicketRequest;
 import com.example.app.ticket.dto.request.CreateTicketRequest;
 import com.example.app.ticket.dto.request.UpdateTicketClassificationRequest;
@@ -39,19 +40,22 @@ public class TicketService {
 	private final UserRepository userRepository;
 	private final TicketMapper ticketMapper;
 	private final HistoryService historyService;
+	private final SlaService slaService;
 
 	public TicketService(
 		TicketRepository ticketRepository,
 		CategoryRepository categoryRepository,
 		UserRepository userRepository,
 		TicketMapper ticketMapper,
-		HistoryService historyService
+		HistoryService historyService,
+		SlaService slaService
 	) {
 		this.ticketRepository = ticketRepository;
 		this.categoryRepository = categoryRepository;
 		this.userRepository = userRepository;
 		this.ticketMapper = ticketMapper;
 		this.historyService = historyService;
+		this.slaService = slaService;
 	}
 
 	@Transactional
@@ -67,6 +71,7 @@ public class TicketService {
 		ticket.setAssignee(null);
 		ticket.setCategory(category);
 		ticket.setClosedAt(null);
+		ticket.setDueAt(slaService.calculateDueAt(ticket.getPriority()));
 
 		Ticket savedTicket = ticketRepository.save(ticket);
 		historyService.recordTicketCreated(savedTicket, author);
@@ -141,6 +146,7 @@ public class TicketService {
 		Category category = findCategoryById(request.categoryId());
 		ticket.setCategory(category);
 		ticket.setPriority(request.priority());
+		ticket.setDueAt(slaService.calculateDueAt(ticket.getPriority()));
 
 		Ticket savedTicket = ticketRepository.save(ticket);
 		if (!oldCategoryName.equals(savedTicket.getCategory().getName())) {

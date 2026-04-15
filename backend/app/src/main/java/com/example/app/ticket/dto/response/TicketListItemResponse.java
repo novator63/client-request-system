@@ -15,6 +15,7 @@ public record TicketListItemResponse(
 	Long categoryId,
 	String categoryName,
 	LocalDateTime createdAt,
-	LocalDateTime updatedAt
+	LocalDateTime updatedAt,
+	LocalDateTime dueAt
 ) {
 }

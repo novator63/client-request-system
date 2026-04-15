@@ -19,6 +19,7 @@ public record TicketResponse(
 	String categoryName,
 	LocalDateTime createdAt,
 	LocalDateTime updatedAt,
-	LocalDateTime closedAt
+	LocalDateTime closedAt,
+	LocalDateTime dueAt
 ) {
 }
