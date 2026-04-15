@@ -38,3 +38,5 @@ application.yml
 
 # Docker
 docker-compose.yml
+
+V2__Seed_admin_user.sql
