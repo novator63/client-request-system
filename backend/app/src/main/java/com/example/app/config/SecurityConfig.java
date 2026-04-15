@@ -1,6 +1,7 @@
 package com.example.app.config;
 
 import com.example.app.auth.security.JwtAuthenticationFilter;
+import com.example.app.common.logging.RequestLoggingFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -14,7 +15,11 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
 	@Bean
-	public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthenticationFilter jwtAuthenticationFilter) throws Exception {
+	public SecurityFilterChain securityFilterChain(
+		HttpSecurity http,
+		JwtAuthenticationFilter jwtAuthenticationFilter,
+		RequestLoggingFilter requestLoggingFilter
+	) throws Exception {
 		return http
 			.csrf(csrf -> csrf.disable())
 			.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -24,6 +29,7 @@ public class SecurityConfig {
 				.anyRequest().authenticated()
 			)
 			.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+			.addFilterAfter(requestLoggingFilter, JwtAuthenticationFilter.class)
 			.build();
 	}
 
