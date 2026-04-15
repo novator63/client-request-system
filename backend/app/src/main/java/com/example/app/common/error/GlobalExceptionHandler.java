@@ -1,88 +1,31 @@
 package com.example.app.common.error;
 
-import com.example.app.auth.exception.InvalidCredentialsException;
-import com.example.app.auth.exception.UnauthenticatedException;
-import com.example.app.category.exception.CategoryBadRequestException;
-import com.example.app.category.exception.CategoryConflictException;
-import com.example.app.category.exception.CategoryNotFoundException;
-import com.example.app.ticket.exception.TicketBadRequestException;
-import com.example.app.ticket.exception.TicketNotFoundException;
-import com.example.app.user.exception.UserNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.ConstraintViolationException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.time.Instant;
+import java.util.List;
 
 @RestControllerAdvice(basePackages = "com.example.app")
 public class GlobalExceptionHandler {
+	private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
-	@ExceptionHandler(CategoryNotFoundException.class)
-	public ResponseEntity<ApiErrorResponse> handleCategoryNotFound(
-		CategoryNotFoundException ex,
+	@ExceptionHandler(BusinessException.class)
+	public ResponseEntity<ApiErrorResponse> handleBusiness(
+		BusinessException ex,
 		HttpServletRequest request
 	) {
-		return build(HttpStatus.NOT_FOUND, "CATEGORY_NOT_FOUND", ex.getMessage(), request);
-	}
-
-	@ExceptionHandler(CategoryConflictException.class)
-	public ResponseEntity<ApiErrorResponse> handleCategoryConflict(
-		CategoryConflictException ex,
-		HttpServletRequest request
-	) {
-		return build(HttpStatus.CONFLICT, "CATEGORY_NAME_CONFLICT", ex.getMessage(), request);
-	}
-
-	@ExceptionHandler(CategoryBadRequestException.class)
-	public ResponseEntity<ApiErrorResponse> handleCategoryBadRequest(
-		CategoryBadRequestException ex,
-		HttpServletRequest request
-	) {
-		return build(HttpStatus.BAD_REQUEST, "CATEGORY_BAD_REQUEST", ex.getMessage(), request);
-	}
-
-	@ExceptionHandler(InvalidCredentialsException.class)
-	public ResponseEntity<ApiErrorResponse> handleInvalidCredentials(
-		InvalidCredentialsException ex,
-		HttpServletRequest request
-	) {
-		return build(HttpStatus.UNAUTHORIZED, "AUTH_INVALID_CREDENTIALS", ex.getMessage(), request);
-	}
-
-	@ExceptionHandler(UnauthenticatedException.class)
-	public ResponseEntity<ApiErrorResponse> handleUnauthenticated(
-		UnauthenticatedException ex,
-		HttpServletRequest request
-	) {
-		return build(HttpStatus.UNAUTHORIZED, "AUTH_UNAUTHENTICATED", ex.getMessage(), request);
-	}
-
-	@ExceptionHandler(UserNotFoundException.class)
-	public ResponseEntity<ApiErrorResponse> handleUserNotFound(
-		UserNotFoundException ex,
-		HttpServletRequest request
-	) {
-		return build(HttpStatus.NOT_FOUND, "USER_NOT_FOUND", ex.getMessage(), request);
-	}
-
-	@ExceptionHandler(TicketNotFoundException.class)
-	public ResponseEntity<ApiErrorResponse> handleTicketNotFound(
-		TicketNotFoundException ex,
-		HttpServletRequest request
-	) {
-		return build(HttpStatus.NOT_FOUND, "TICKET_NOT_FOUND", ex.getMessage(), request);
-	}
-
-	@ExceptionHandler(TicketBadRequestException.class)
-	public ResponseEntity<ApiErrorResponse> handleTicketBadRequest(
-		TicketBadRequestException ex,
-		HttpServletRequest request
-	) {
-		return build(HttpStatus.BAD_REQUEST, "TICKET_BAD_REQUEST", ex.getMessage(), request);
+		return build(ex.getStatus(), ex.getMessage(), request, List.of());
 	}
 
 	@ExceptionHandler(MethodArgumentNotValidException.class)
@@ -90,12 +33,48 @@ public class GlobalExceptionHandler {
 		MethodArgumentNotValidException ex,
 		HttpServletRequest request
 	) {
-		FieldError fieldError = ex.getBindingResult().getFieldError();
-		String message = (fieldError != null && fieldError.getDefaultMessage() != null)
-			? fieldError.getDefaultMessage()
-			: "Request validation failed";
+		List<ApiErrorResponse.ValidationError> validationErrors = ex.getBindingResult()
+			.getFieldErrors()
+			.stream()
+			.map(this::toValidationError)
+			.distinct()
+			.toList();
 
-		return build(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", message, request);
+		return build(HttpStatus.BAD_REQUEST, "Request validation failed", request, validationErrors);
+	}
+
+	@ExceptionHandler(ConstraintViolationException.class)
+	public ResponseEntity<ApiErrorResponse> handleConstraintViolation(
+		ConstraintViolationException ex,
+		HttpServletRequest request
+	) {
+		List<ApiErrorResponse.ValidationError> validationErrors = ex.getConstraintViolations()
+			.stream()
+			.map(violation -> new ApiErrorResponse.ValidationError(
+				violation.getPropertyPath().toString(),
+				violation.getMessage()
+			))
+			.distinct()
+			.toList();
+
+		return build(HttpStatus.BAD_REQUEST, "Request validation failed", request, validationErrors);
+	}
+
+	@ExceptionHandler(MethodArgumentTypeMismatchException.class)
+	public ResponseEntity<ApiErrorResponse> handleTypeMismatch(
+		MethodArgumentTypeMismatchException ex,
+		HttpServletRequest request
+	) {
+		String message = "Invalid value for parameter: " + ex.getName();
+		return build(HttpStatus.BAD_REQUEST, message, request, List.of());
+	}
+
+	@ExceptionHandler(HttpMessageNotReadableException.class)
+	public ResponseEntity<ApiErrorResponse> handleUnreadableBody(
+		HttpMessageNotReadableException ex,
+		HttpServletRequest request
+	) {
+		return build(HttpStatus.BAD_REQUEST, "Malformed request body", request, List.of());
 	}
 
 	@ExceptionHandler(Exception.class)
@@ -103,22 +82,32 @@ public class GlobalExceptionHandler {
 		Exception ex,
 		HttpServletRequest request
 	) {
-		return build(HttpStatus.INTERNAL_SERVER_ERROR, "INTERNAL_ERROR", "Unexpected error", request);
+		log.error("Unhandled exception for request {}", request.getRequestURI(), ex);
+		return build(HttpStatus.INTERNAL_SERVER_ERROR, "Unexpected error", request, List.of());
+	}
+
+	private ApiErrorResponse.ValidationError toValidationError(FieldError fieldError) {
+		String fieldName = fieldError.getField();
+		String message = fieldError.getDefaultMessage() != null
+			? fieldError.getDefaultMessage()
+			: "Invalid value";
+
+		return new ApiErrorResponse.ValidationError(fieldName, message);
 	}
 
 	private ResponseEntity<ApiErrorResponse> build(
 		HttpStatus status,
-		String code,
 		String message,
-		HttpServletRequest request
+		HttpServletRequest request,
+		List<ApiErrorResponse.ValidationError> validationErrors
 	) {
 		ApiErrorResponse response = new ApiErrorResponse(
 			Instant.now(),
 			status.value(),
 			status.getReasonPhrase(),
-			code,
 			message,
-			request.getRequestURI()
+			request.getRequestURI(),
+			validationErrors
 		);
 
 		return ResponseEntity.status(status).body(response);

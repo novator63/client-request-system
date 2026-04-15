@@ -9,6 +9,8 @@ import com.example.app.ticket.dto.response.TicketListItemResponse;
 import com.example.app.ticket.dto.response.TicketResponse;
 import com.example.app.ticket.service.TicketService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Positive;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -24,6 +26,7 @@ import static org.springframework.http.HttpStatus.CREATED;
 
 @RestController
 @RequestMapping("/tickets")
+@Validated
 public class TicketController {
 
 	private final TicketService ticketService;
@@ -44,35 +47,44 @@ public class TicketController {
 	}
 
 	@GetMapping("/{id}")
-	public TicketResponse getById(@PathVariable Long id) {
+	public TicketResponse getById(@PathVariable @Positive(message = "Ticket id must be positive") Long id) {
 		return ticketService.getById(id);
 	}
 
 	@PatchMapping("/{id}")
-	public TicketResponse update(@PathVariable Long id, @Valid @RequestBody UpdateTicketRequest request) {
+	public TicketResponse update(
+		@PathVariable @Positive(message = "Ticket id must be positive") Long id,
+		@Valid @RequestBody UpdateTicketRequest request
+	) {
 		return ticketService.update(id, request);
 	}
 
 	@PatchMapping("/{id}/assign")
-	public TicketResponse assign(@PathVariable Long id, @Valid @RequestBody AssignTicketRequest request) {
+	public TicketResponse assign(
+		@PathVariable @Positive(message = "Ticket id must be positive") Long id,
+		@Valid @RequestBody AssignTicketRequest request
+	) {
 		return ticketService.assign(id, request);
 	}
 
 	@PatchMapping("/{id}/classification")
 	public TicketResponse updateClassification(
-		@PathVariable Long id,
+		@PathVariable @Positive(message = "Ticket id must be positive") Long id,
 		@Valid @RequestBody UpdateTicketClassificationRequest request
 	) {
 		return ticketService.updateClassification(id, request);
 	}
 
 	@PatchMapping("/{id}/status")
-	public TicketResponse updateStatus(@PathVariable Long id, @Valid @RequestBody UpdateTicketStatusRequest request) {
+	public TicketResponse updateStatus(
+		@PathVariable @Positive(message = "Ticket id must be positive") Long id,
+		@Valid @RequestBody UpdateTicketStatusRequest request
+	) {
 		return ticketService.updateStatus(id, request);
 	}
 
 	@PostMapping("/{id}/close")
-	public TicketResponse close(@PathVariable Long id) {
+	public TicketResponse close(@PathVariable @Positive(message = "Ticket id must be positive") Long id) {
 		return ticketService.close(id);
 	}
 }

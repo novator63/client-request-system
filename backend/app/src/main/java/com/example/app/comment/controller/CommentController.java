@@ -4,6 +4,8 @@ import com.example.app.comment.dto.request.CreateCommentRequest;
 import com.example.app.comment.dto.response.CommentResponse;
 import com.example.app.comment.service.CommentService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Positive;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -18,6 +20,7 @@ import static org.springframework.http.HttpStatus.CREATED;
 
 @RestController
 @RequestMapping("/comments/tickets")
+@Validated
 public class CommentController {
 
 	private final CommentService commentService;
@@ -28,12 +31,17 @@ public class CommentController {
 
 	@PostMapping("/{ticketId}")
 	@ResponseStatus(CREATED)
-	public CommentResponse create(@PathVariable Long ticketId, @Valid @RequestBody CreateCommentRequest request) {
+	public CommentResponse create(
+		@PathVariable @Positive(message = "Ticket id must be positive") Long ticketId,
+		@Valid @RequestBody CreateCommentRequest request
+	) {
 		return commentService.create(ticketId, request);
 	}
 
 	@GetMapping("/{ticketId}")
-	public List<CommentResponse> getByTicketId(@PathVariable Long ticketId) {
+	public List<CommentResponse> getByTicketId(
+		@PathVariable @Positive(message = "Ticket id must be positive") Long ticketId
+	) {
 		return commentService.getByTicketId(ticketId);
 	}
 }

@@ -1,8 +1,11 @@
 package com.example.app.auth.exception;
 
-public class UnauthenticatedException extends RuntimeException {
+import com.example.app.common.error.BusinessException;
+import org.springframework.http.HttpStatus;
+
+public class UnauthenticatedException extends BusinessException {
 
 	public UnauthenticatedException() {
-		super("Authentication required");
+		super(HttpStatus.UNAUTHORIZED, "Authentication required");
 	}
 }

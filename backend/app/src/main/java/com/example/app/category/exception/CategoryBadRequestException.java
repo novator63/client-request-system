@@ -1,8 +1,11 @@
 package com.example.app.category.exception;
 
-public class CategoryBadRequestException extends RuntimeException {
+import com.example.app.common.error.BusinessException;
+import org.springframework.http.HttpStatus;
+
+public class CategoryBadRequestException extends BusinessException {
 
 	public CategoryBadRequestException(String message) {
-		super(message);
+		super(HttpStatus.BAD_REQUEST, message);
 	}
 }

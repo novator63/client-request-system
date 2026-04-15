@@ -1,8 +1,11 @@
 package com.example.app.user.exception;
 
-public class UserNotFoundException extends RuntimeException {
+import com.example.app.common.error.BusinessException;
+import org.springframework.http.HttpStatus;
+
+public class UserNotFoundException extends BusinessException {
 
 	public UserNotFoundException() {
-		super("User not found");
+		super(HttpStatus.NOT_FOUND, "User not found");
 	}
 }

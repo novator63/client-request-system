@@ -1,8 +1,11 @@
 package com.example.app.category.exception;
 
-public class CategoryNotFoundException extends RuntimeException {
+import com.example.app.common.error.BusinessException;
+import org.springframework.http.HttpStatus;
+
+public class CategoryNotFoundException extends BusinessException {
 
 	public CategoryNotFoundException() {
-		super("Category not found");
+		super(HttpStatus.NOT_FOUND, "Category not found");
 	}
 }

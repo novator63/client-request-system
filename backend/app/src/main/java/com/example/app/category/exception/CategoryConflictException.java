@@ -1,8 +1,11 @@
 package com.example.app.category.exception;
 
-public class CategoryConflictException extends RuntimeException {
+import com.example.app.common.error.BusinessException;
+import org.springframework.http.HttpStatus;
+
+public class CategoryConflictException extends BusinessException {
 
 	public CategoryConflictException() {
-		super("Category name already exists");
+		super(HttpStatus.CONFLICT, "Category name already exists");
 	}
 }

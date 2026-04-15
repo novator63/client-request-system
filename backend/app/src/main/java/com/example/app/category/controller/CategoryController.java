@@ -5,6 +5,8 @@ import com.example.app.category.dto.request.UpdateCategoryRequest;
 import com.example.app.category.dto.response.CategoryResponse;
 import com.example.app.category.service.CategoryService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Positive;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -22,6 +24,7 @@ import static org.springframework.http.HttpStatus.NO_CONTENT;
 
 @RestController
 @RequestMapping("/categories")
+@Validated
 public class CategoryController {
 
 	private final CategoryService categoryService;
@@ -42,18 +45,21 @@ public class CategoryController {
 	}
 
 	@GetMapping("/{id}")
-	public CategoryResponse getById(@PathVariable Long id) {
+	public CategoryResponse getById(@PathVariable @Positive(message = "Category id must be positive") Long id) {
 		return categoryService.getById(id);
 	}
 
 	@PutMapping("/{id}")
-	public CategoryResponse update(@PathVariable Long id, @Valid @RequestBody UpdateCategoryRequest request) {
+	public CategoryResponse update(
+		@PathVariable @Positive(message = "Category id must be positive") Long id,
+		@Valid @RequestBody UpdateCategoryRequest request
+	) {
 		return categoryService.update(id, request);
 	}
 
 	@DeleteMapping("/{id}")
 	@ResponseStatus(NO_CONTENT)
-	public void delete(@PathVariable Long id) {
+	public void delete(@PathVariable @Positive(message = "Category id must be positive") Long id) {
 		categoryService.delete(id);
 	}
 }
