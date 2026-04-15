@@ -22,6 +22,7 @@ Thumbs.db
 .env
 application-local.properties
 application-secret.properties
+application.yml
 
 # ===== IDE =====
 .vscode/
@@ -34,3 +35,6 @@ application-secret.properties
 # ===== Temp =====
 *.tmp
 *.swp
+
+# Docker
+docker-compose.yml
