@@ -40,9 +40,6 @@ onMounted(loadTicket)
         <div class="details-header">
           <h1>Заявка #{{ ticketId }}</h1>
           <div class="header-actions">
-                        <div style="font-size: 12px; color: #999; margin-right: 16px">
-                          {{ authStore.user?.email || 'не авторизирован' }} | {{ authStore.user?.role || 'нет роли' }}
-                        </div>
             <el-button
               v-if="canEdit && !editMode && ticket?.status !== 'CLOSED'"
               @click="enterEditMode"

@@ -5,7 +5,7 @@ import CategoriesView from '../views/CategoriesView.vue'
 import CreateTicketView from '../views/CreateTicketView.vue'
 import LoginView from '../views/LoginView.vue'
 import NotFoundView from '../views/NotFoundView.vue'
-import RequestDetailsView from '../views/RequestDetailsView.vue'
+import TicketDetailsView from '../views/TicketDetailsView.vue'
 import ReportsView from '../views/ReportsView.vue'
 import TicketsView from '../views/TicketsView.vue'
 
@@ -40,7 +40,7 @@ const router = createRouter({
         {
           path: 'tickets/:id',
           name: 'ticket-details',
-          component: RequestDetailsView,
+          component: TicketDetailsView,
         },
         {
           path: 'categories',
