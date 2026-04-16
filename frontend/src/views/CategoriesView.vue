@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { getCategoriesForTicketApi } from '../api/tickets.api'
+import { parseApiError } from '../utils/errorHandler'
 
 const loading = ref(false)
 const categories = ref([])
@@ -15,9 +16,11 @@ const loadCategories = async () => {
   try {
     const response = await getCategoriesForTicketApi()
     categories.value = Array.isArray(response) ? response : []
-  } catch {
+  } catch (error) {
     categories.value = []
-    loadError.value = 'Не удалось загрузить категории. Попробуйте обновить страницу.'
+    loadError.value = parseApiError(error, {
+      fallbackMessage: 'Не удалось загрузить категории. Попробуйте обновить страницу.',
+    })
   } finally {
     loading.value = false
   }

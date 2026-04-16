@@ -2,6 +2,7 @@
 import { reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
+import { parseApiError } from '../utils/errorHandler'
 
 const authStore = useAuthStore()
 const router = useRouter()
@@ -45,8 +46,9 @@ const submit = async () => {
     const redirect = route.query.redirect || '/'
     await router.push(redirect)
   } catch (error) {
-    errorMessage.value =
-      error.response?.data?.message || 'Не удалось войти. Проверьте email и пароль.'
+    errorMessage.value = parseApiError(error, {
+      fallbackMessage: 'Не удалось войти. Проверьте email и пароль.',
+    })
   } finally {
     loading.value = false
   }

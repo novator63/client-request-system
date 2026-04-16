@@ -1,5 +1,5 @@
 import { computed, ref } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessageBox } from 'element-plus'
 import {
   assignTicketApi,
   closeTicketApi,
@@ -9,6 +9,7 @@ import {
   updateTicketStatusApi,
 } from '../api/tickets.api'
 import { USER_ROLES } from '../constants/ticket.constants'
+import { notifyApiError, notifySuccess } from '../utils/errorHandler'
 
 export const useTicketDetails = ({ route, authStore }) => {
   const loading = ref(false)
@@ -27,6 +28,20 @@ export const useTicketDetails = ({ route, authStore }) => {
   const isAdmin = computed(() => authStore.user?.role === USER_ROLES.ADMIN)
   const isOperator = computed(() => authStore.user?.role === USER_ROLES.OPERATOR)
   const canEdit = computed(() => isAdmin.value || isOperator.value)
+  const ticketAuthorLabel = computed(() => {
+    if (!ticket.value) {
+      return '—'
+    }
+
+    return ticket.value.authorName || `ID: ${ticket.value.authorId || '—'}`
+  })
+  const ticketAssigneeLabel = computed(() => {
+    if (!ticket.value) {
+      return '—'
+    }
+
+    return ticket.value.assigneeName || (ticket.value.assigneeId ? `ID: ${ticket.value.assigneeId}` : 'Не назначен')
+  })
 
   const loadCategories = async () => {
     try {
@@ -49,7 +64,10 @@ export const useTicketDetails = ({ route, authStore }) => {
         return
       }
 
-      throw error
+      ticket.value = null
+      notifyApiError(error, {
+        fallbackMessage: 'Не удалось загрузить заявку',
+      })
     } finally {
       loading.value = false
     }
@@ -100,9 +118,11 @@ export const useTicketDetails = ({ route, authStore }) => {
 
       await loadTicket()
       editMode.value = false
-      ElMessage.success('Заявка успешно обновлена')
+      notifySuccess('Заявка успешно обновлена')
     } catch (error) {
-      ElMessage.error(error.response?.data?.message || 'Ошибка при обновлении заявки')
+      notifyApiError(error, {
+        fallbackMessage: 'Ошибка при обновлении заявки',
+      })
     } finally {
       updating.value = false
     }
@@ -124,9 +144,11 @@ export const useTicketDetails = ({ route, authStore }) => {
     try {
       await closeTicketApi(ticketId.value)
       await loadTicket()
-      ElMessage.success('Заявка успешно закрыта')
+      notifySuccess('Заявка успешно закрыта')
     } catch (error) {
-      ElMessage.error(error.response?.data?.message || 'Ошибка при закрытии заявки')
+      notifyApiError(error, {
+        fallbackMessage: 'Ошибка при закрытии заявки',
+      })
     } finally {
       updating.value = false
     }
@@ -146,6 +168,8 @@ export const useTicketDetails = ({ route, authStore }) => {
     ticketId,
     isAdmin,
     canEdit,
+    ticketAuthorLabel,
+    ticketAssigneeLabel,
     loadTicket,
     enterEditMode,
     cancelEdit,

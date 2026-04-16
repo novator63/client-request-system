@@ -7,6 +7,7 @@ export const useAuthStore = defineStore('auth', {
     token: null,
     user: null,
     initialized: false,
+    initializingPromise: null,
   }),
 
   getters: {
@@ -39,17 +40,26 @@ export const useAuthStore = defineStore('auth', {
         return
       }
 
-      try {
-        // Try to refresh/restore session
-        await this.refresh()
-        // If refresh succeeded, fetch current user
-        await this.fetchCurrentUser()
-      } catch {
-        // Refresh failed - user is not authenticated
-        this.clearAuth()
+      if (this.initializingPromise) {
+        return this.initializingPromise
       }
 
-      this.initialized = true
+      this.initializingPromise = (async () => {
+        try {
+          // Try to refresh/restore session
+          await this.refresh()
+          // If refresh succeeded, fetch current user
+          await this.fetchCurrentUser()
+        } catch {
+          // Refresh failed - user is not authenticated
+          this.clearAuth()
+        } finally {
+          this.initialized = true
+          this.initializingPromise = null
+        }
+      })()
+
+      return this.initializingPromise
     },
 
     /**

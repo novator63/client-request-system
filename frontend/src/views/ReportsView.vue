@@ -1,8 +1,9 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { getTicketsApi } from '../api/tickets.api'
-import { STATUS_OPTIONS } from '../constants/ticket.constants'
+import { isClosedTicketStatus, STATUS_OPTIONS } from '../constants/ticket.constants'
 import { getStatusLabel } from '../utils/ticketFormatters'
+import { parseApiError } from '../utils/errorHandler'
 
 const loading = ref(false)
 const tickets = ref([])
@@ -13,7 +14,7 @@ const totalTickets = computed(() => tickets.value.length)
 const overdueTickets = computed(() => {
   const now = Date.now()
   return tickets.value.filter((ticket) => {
-    if (!ticket?.dueAt || ticket.status === 'CLOSED') {
+    if (!ticket?.dueAt || isClosedTicketStatus(ticket.status)) {
       return false
     }
 
@@ -46,9 +47,11 @@ const loadReport = async () => {
 
   try {
     tickets.value = await getTicketsApi()
-  } catch {
+  } catch (error) {
     tickets.value = []
-    loadError.value = 'Не удалось загрузить данные для отчета. Попробуйте обновить страницу.'
+    loadError.value = parseApiError(error, {
+      fallbackMessage: 'Не удалось загрузить данные для отчета. Попробуйте обновить страницу.',
+    })
   } finally {
     loading.value = false
   }

@@ -1,9 +1,10 @@
 <script setup>
-import { onMounted } from 'vue'
+import { computed, onBeforeUnmount, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useTicketDetails } from '../composables/useTicketDetails'
-import { TICKET_PRIORITIES, TICKET_STATUSES } from '../constants/ticket.constants'
+import { useComments } from '../composables/useComments'
+import { isClosedTicketStatus, TICKET_PRIORITIES, TICKET_STATUSES } from '../constants/ticket.constants'
 import { formatDateTime, getPriorityLabel, getStatusLabel } from '../utils/ticketFormatters'
 
 const route = useRoute()
@@ -23,14 +24,50 @@ const {
   ticketId,
   isAdmin,
   canEdit,
+  ticketAuthorLabel,
+  ticketAssigneeLabel,
   loadTicket,
   enterEditMode,
   cancelEdit,
   saveChanges,
   closeTicket,
 } = useTicketDetails({ route, authStore })
+const ticketStatus = computed(() => ticket.value?.status)
+const isTicketClosed = computed(() => isClosedTicketStatus(ticketStatus.value))
+const {
+  comments,
+  commentsLoading,
+  commentsLoadError,
+  submittingComment,
+  commentText,
+  canSubmitComment,
+  loadComments,
+  submitComment,
+  canAddComments,
+} = useComments({ ticketId, ticketStatus })
 
-onMounted(loadTicket)
+let syncTimerId = null
+
+const syncTicketState = async () => {
+  await loadTicket()
+  await loadComments()
+}
+
+onMounted(async () => {
+  await loadTicket()
+  await loadComments()
+
+  syncTimerId = window.setInterval(() => {
+    void syncTicketState()
+  }, 15000)
+})
+
+onBeforeUnmount(() => {
+  if (syncTimerId) {
+    window.clearInterval(syncTimerId)
+    syncTimerId = null
+  }
+})
 </script>
 
 <template>
@@ -41,7 +78,7 @@ onMounted(loadTicket)
           <h1>Заявка #{{ ticketId }}</h1>
           <div class="header-actions">
             <el-button
-              v-if="canEdit && !editMode && ticket?.status !== 'CLOSED'"
+              v-if="canEdit && !editMode && !isTicketClosed"
               @click="enterEditMode"
               type="primary"
             >
@@ -65,9 +102,7 @@ onMounted(loadTicket)
           <el-descriptions-item label="Описание">{{
             ticket.description || '—'
           }}</el-descriptions-item>
-          <el-descriptions-item label="Автор">{{
-            ticket.authorName || `ID: ${ticket.authorId || '—'}`
-          }}</el-descriptions-item>
+          <el-descriptions-item label="Автор">{{ ticketAuthorLabel }}</el-descriptions-item>
           <el-descriptions-item label="Создана">{{
             formatDateTime(ticket.createdAt)
           }}</el-descriptions-item>
@@ -81,7 +116,7 @@ onMounted(loadTicket)
           <div class="section-header">
             <h3>Параметры заявки</h3>
             <el-button
-              v-if="ticket.status !== 'CLOSED'"
+              v-if="!isTicketClosed"
               type="danger"
               plain
               @click="closeTicket"
@@ -152,9 +187,7 @@ onMounted(loadTicket)
                   />
                 </template>
                 <template v-else>
-                  <span>{{
-                    ticket.assigneeName || (ticket.assigneeId ? `ID: ${ticket.assigneeId}` : 'Не назначен')
-                  }}</span>
+                  <span>{{ ticketAssigneeLabel }}</span>
                 </template>
               </el-form-item>
             </template>
@@ -177,6 +210,73 @@ onMounted(loadTicket)
             }}</el-descriptions-item>
             <el-descriptions-item label="Срок">{{ formatDateTime(ticket.dueAt) }}</el-descriptions-item>
           </el-descriptions>
+        </div>
+
+        <div class="comments-section">
+          <div class="comments-section__header">
+            <div>
+              <h3>Комментарии</h3>
+              <p>
+                {{ isTicketClosed ? 'Только история комментариев' : 'Обсуждение заявки без перехода на отдельную страницу' }}
+              </p>
+            </div>
+
+            <el-button text :loading="commentsLoading" @click="loadComments">Обновить</el-button>
+          </div>
+
+          <el-alert
+            v-if="commentsLoadError"
+            :title="commentsLoadError"
+            type="error"
+            show-icon
+            :closable="false"
+            class="comments-section__alert"
+          />
+
+          <div class="comments-list" v-loading="commentsLoading">
+            <el-empty
+              v-if="!commentsLoading && comments.length === 0 && !commentsLoadError"
+              description="Комментариев пока нет"
+            />
+
+            <div v-else-if="comments.length > 0" class="comments-list__items">
+              <article v-for="comment in comments" :key="comment.id" class="comment-card">
+                <div class="comment-card__header">
+                  <div class="comment-card__author">
+                    {{ comment.authorFullName || `ID: ${comment.authorId || '—'}` }}
+                  </div>
+                  <div class="comment-card__date">{{ formatDateTime(comment.createdAt) }}</div>
+                </div>
+
+                <p class="comment-card__content">{{ comment.content }}</p>
+              </article>
+            </div>
+          </div>
+
+          <el-form v-if="canAddComments" class="comment-form" @submit.prevent="submitComment">
+            <el-form-item label="Новый комментарий">
+              <el-input
+                v-model="commentText"
+                type="textarea"
+                :rows="4"
+                :maxlength="500"
+                show-word-limit
+                placeholder="Напишите комментарий и нажмите отправить"
+                :disabled="submittingComment"
+              />
+            </el-form-item>
+
+            <div class="comment-form__actions">
+              <el-button
+                type="primary"
+                native-type="submit"
+                :loading="submittingComment"
+                :disabled="!canSubmitComment"
+              >
+                Отправить
+              </el-button>
+            </div>
+          </el-form>
         </div>
       </div>
     </el-card>
@@ -231,5 +331,88 @@ onMounted(loadTicket)
 
 .status-section {
   margin-top: 16px;
+}
+
+.comments-section {
+  border: 1px solid var(--el-border-color);
+  border-radius: 6px;
+  padding: 16px;
+  background-color: var(--el-fill-color-light);
+}
+
+.comments-section__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.comments-section__header h3 {
+  margin: 0;
+  font-size: 16px;
+  color: var(--el-text-color-primary);
+}
+
+.comments-section__header p {
+  margin: 4px 0 0;
+  color: var(--el-text-color-secondary);
+  font-size: 13px;
+}
+
+.comments-section__alert {
+  margin-bottom: 16px;
+}
+
+.comments-list {
+  min-height: 72px;
+}
+
+.comments-list__items {
+  display: grid;
+  gap: 12px;
+}
+
+.comment-card {
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 6px;
+  padding: 14px 16px;
+  background: var(--el-bg-color);
+}
+
+.comment-card__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.comment-card__author {
+  font-weight: 600;
+  color: var(--el-text-color-primary);
+}
+
+.comment-card__date {
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+  white-space: nowrap;
+}
+
+.comment-card__content {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--el-text-color-primary);
+  line-height: 1.6;
+}
+
+.comment-form {
+  margin-top: 16px;
+}
+
+.comment-form__actions {
+  display: flex;
+  justify-content: flex-end;
 }
 </style>

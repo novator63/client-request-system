@@ -1,8 +1,8 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
-import { ElMessage } from 'element-plus'
 import { useRouter } from 'vue-router'
 import { createTicketApi, getCategoriesForTicketApi } from '../api/tickets.api'
+import { notifyApiError, notifySuccess, parseApiError } from '../utils/errorHandler'
 
 const router = useRouter()
 
@@ -122,16 +122,6 @@ const buildTicketDescription = () => {
     .trim()
 }
 
-const extractErrorMessage = (error) => {
-  const validationErrors = error.response?.data?.validationErrors
-
-  if (Array.isArray(validationErrors) && validationErrors.length > 0) {
-    return validationErrors.map((item) => item.message).join('; ')
-  }
-
-  return error.response?.data?.message || 'Не удалось создать заявку. Попробуйте позже.'
-}
-
 const loadCategories = async () => {
   categoriesLoading.value = true
   categoriesError.value = ''
@@ -146,8 +136,10 @@ const loadCategories = async () => {
     }
 
     categoriesError.value = 'Список категорий пуст. Обратитесь к администратору.'
-  } catch {
-    categoriesError.value = 'Не удалось загрузить категории. Попробуйте обновить страницу.'
+  } catch (error) {
+    categoriesError.value = parseApiError(error, {
+      fallbackMessage: 'Не удалось загрузить категории. Попробуйте обновить страницу.',
+    })
   } finally {
     categoriesLoading.value = false
   }
@@ -155,7 +147,9 @@ const loadCategories = async () => {
 
 const submit = async () => {
   if (!hasCategories.value) {
-    ElMessage.error(categoriesError.value || 'Невозможно создать заявку без доступных категорий')
+    notifyApiError(null, {
+      fallbackMessage: categoriesError.value || 'Невозможно создать заявку без доступных категорий',
+    })
     return
   }
 
@@ -177,7 +171,7 @@ const submit = async () => {
 
     const response = await createTicketApi(payload)
 
-    ElMessage.success('Заявка успешно создана')
+    notifySuccess('Заявка успешно создана')
 
     if (response?.id) {
       await router.push(`/tickets/${response.id}`)
@@ -186,7 +180,9 @@ const submit = async () => {
 
     await router.push('/tickets')
   } catch (error) {
-    ElMessage.error(extractErrorMessage(error))
+    notifyApiError(error, {
+      fallbackMessage: 'Не удалось создать заявку. Попробуйте позже.',
+    })
   } finally {
     loading.value = false
   }

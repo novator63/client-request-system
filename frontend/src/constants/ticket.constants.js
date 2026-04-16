@@ -5,12 +5,15 @@ export const USER_ROLES = {
 }
 
 export const TICKET_STATUSES = ['NEW', 'IN_PROGRESS', 'RESOLVED']
+export const CLOSED_TICKET_STATUS = 'CLOSED'
+
+export const isClosedTicketStatus = (status) => status === CLOSED_TICKET_STATUS
 
 export const STATUS_OPTIONS = [
   { label: 'Новый', value: 'NEW' },
   { label: 'В работе', value: 'IN_PROGRESS' },
   { label: 'Решен', value: 'RESOLVED' },
-  { label: 'Закрыт', value: 'CLOSED' },
+  { label: 'Закрыт', value: CLOSED_TICKET_STATUS },
 ]
 
 export const TICKET_PRIORITIES = ['LOW', 'MEDIUM', 'HIGH']

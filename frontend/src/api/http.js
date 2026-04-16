@@ -11,6 +11,10 @@ let authToken = null
 let isRefreshing = false
 let refreshSubscribers = []
 
+const isAuthFlowEndpoint = (url = '') => {
+  return url.includes('/auth/login') || url.includes('/auth/refresh')
+}
+
 /**
  * Set the in-memory auth token
  */
@@ -42,8 +46,8 @@ const notifyTokenRefreshed = (token) => {
 
 // Request interceptor - add Authorization header
 http.interceptors.request.use((config) => {
-  // Skip adding token for auth endpoints
-  if (config.url?.includes('/auth/')) {
+  // Do not attach token only for login/refresh endpoints.
+  if (isAuthFlowEndpoint(config.url)) {
     return config
   }
 
@@ -63,7 +67,7 @@ http.interceptors.response.use(
     // Only handle 401 for non-auth endpoints and not already retried
     if (
       error.response?.status === 401 &&
-      !originalRequest.url?.includes('/auth/') &&
+      !isAuthFlowEndpoint(originalRequest?.url) &&
       !originalRequest._isRetry
     ) {
       // Mark request as retry to prevent infinite loop
