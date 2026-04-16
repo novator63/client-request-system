@@ -37,8 +37,6 @@ application.yml
 *.swp
 
 # Docker
-docker-compose.yml
-
 
 node_modules/
 dist/
