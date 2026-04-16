@@ -1,4 +1,5 @@
 <script setup>
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import AppHeader from '../components/AppHeader.vue'
@@ -6,10 +7,16 @@ import AppSidebar from '../components/AppSidebar.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const isLoggingOut = ref(false)
 
 const handleLogout = async () => {
-  authStore.logout()
-  await router.push('/login')
+  isLoggingOut.value = true
+  try {
+    await authStore.logout()
+    await router.push('/login')
+  } finally {
+    isLoggingOut.value = false
+  }
 }
 </script>
 

@@ -5,6 +5,15 @@ export const loginApi = async (payload) => {
   return data
 }
 
+export const refreshTokenApi = async () => {
+  const { data } = await http.post('/auth/refresh')
+  return data
+}
+
+export const logoutApi = async () => {
+  await http.post('/auth/logout')
+}
+
 export const getCurrentUserApi = async () => {
   const { data } = await http.get('/auth/me')
   return data
