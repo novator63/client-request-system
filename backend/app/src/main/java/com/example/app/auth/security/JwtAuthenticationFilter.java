@@ -9,6 +9,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -39,16 +40,22 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
 		String token = authorizationHeader.substring(7);
 		if (jwtService.isAccessTokenValid(token) && SecurityContextHolder.getContext().getAuthentication() == null) {
-			String email = jwtService.extractEmail(token);
-			UserDetails userDetails = customUserDetailsService.loadUserByUsername(email);
+			try {
+				String email = jwtService.extractEmail(token);
+				UserDetails userDetails = customUserDetailsService.loadUserByUsername(email);
 
-			UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-				userDetails,
-				null,
-				userDetails.getAuthorities()
-			);
-			authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-			SecurityContextHolder.getContext().setAuthentication(authentication);
+				if (userDetails.isEnabled()) {
+					UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+						userDetails,
+						null,
+						userDetails.getAuthorities()
+					);
+					authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+					SecurityContextHolder.getContext().setAuthentication(authentication);
+				}
+			} catch (UsernameNotFoundException | IllegalArgumentException exception) {
+				SecurityContextHolder.clearContext();
+			}
 		}
 
 		filterChain.doFilter(request, response);

@@ -52,7 +52,7 @@ public class AuthService {
 		User user = userRepository.findByEmail(request.email())
 			.orElseThrow(InvalidCredentialsException::new);
 
-		if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
+		if (!user.isActive() || !passwordEncoder.matches(request.password(), user.getPasswordHash())) {
 			throw new InvalidCredentialsException();
 		}
 
@@ -87,6 +87,12 @@ public class AuthService {
 
 		User user = userRepository.findByEmail(email)
 			.orElseThrow(InvalidRefreshTokenException::new);
+
+		if (!user.isActive()) {
+			refreshTokenService.revokeIfExists(refreshToken);
+			refreshTokenCookieService.clearRefreshTokenCookie(response);
+			throw new InvalidRefreshTokenException();
+		}
 
 		RefreshToken storedRefreshToken = refreshTokenService.requireActiveToken(refreshToken);
 		if (!storedRefreshToken.getUser().getId().equals(user.getId())) {
