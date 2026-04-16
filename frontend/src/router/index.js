@@ -1,7 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import AppLayout from '../layouts/AppLayout.vue'
-import CategoriesView from '../views/CategoriesView.vue'
 import CreateTicketView from '../views/CreateTicketView.vue'
 import LoginView from '../views/LoginView.vue'
 import NotFoundView from '../views/NotFoundView.vue'
@@ -41,12 +40,6 @@ const router = createRouter({
           path: 'tickets/:id',
           name: 'ticket-details',
           component: TicketDetailsView,
-        },
-        {
-          path: 'categories',
-          name: 'categories',
-          component: CategoriesView,
-          meta: { allowedRoles: ['ADMIN', 'OPERATOR'] },
         },
         {
           path: 'reports',

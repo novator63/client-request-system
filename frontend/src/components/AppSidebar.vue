@@ -12,9 +12,6 @@ const menuItems = computed(() => {
   return [
     { label: 'Заявки', path: '/tickets' },
     { label: 'Создать заявку', path: '/tickets/create' },
-    ...(role === 'ADMIN' || role === 'OPERATOR'
-      ? [{ label: 'Категории', path: '/categories' }]
-      : []),
     ...(role === 'ADMIN' ? [{ label: 'Отчеты', path: '/reports' }] : []),
   ]
 })
