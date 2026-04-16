@@ -39,5 +39,6 @@ application.yml
 # Docker
 docker-compose.yml
 
+
 node_modules/
 dist/
