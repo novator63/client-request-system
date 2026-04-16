@@ -65,7 +65,7 @@ public class TicketController {
 	}
 
 	@PatchMapping("/{id}/assign")
-	@PreAuthorize("hasAnyRole('ADMIN','OPERATOR')")
+	@PreAuthorize("hasRole('ADMIN')")
 	public TicketResponse assign(
 		@PathVariable @Positive(message = "Ticket id must be positive") Long id,
 		@Valid @RequestBody AssignTicketRequest request
@@ -74,7 +74,7 @@ public class TicketController {
 	}
 
 	@PatchMapping("/{id}/classification")
-	@PreAuthorize("hasAnyRole('ADMIN','OPERATOR')")
+	@PreAuthorize("hasRole('ADMIN')")
 	public TicketResponse updateClassification(
 		@PathVariable @Positive(message = "Ticket id must be positive") Long id,
 		@Valid @RequestBody UpdateTicketClassificationRequest request
