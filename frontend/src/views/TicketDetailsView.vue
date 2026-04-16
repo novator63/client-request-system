@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useTicketDetails } from '../composables/useTicketDetails'
 import { useComments } from '../composables/useComments'
+import { useTicketHistory } from '../composables/useTicketHistory'
 import { isClosedTicketStatus, TICKET_PRIORITIES, TICKET_STATUSES } from '../constants/ticket.constants'
 import { formatDateTime, getPriorityLabel, getStatusLabel } from '../utils/ticketFormatters'
 
@@ -47,17 +48,26 @@ const {
   submitComment,
   canAddComments,
 } = useComments({ ticketId, ticketStatus })
+const {
+  historyEntries,
+  historyLoading,
+  historyLoadError,
+  canViewHistory,
+  loadHistory,
+} = useTicketHistory({ ticketId, authStore })
 
 let syncTimerId = null
 
 const syncTicketState = async () => {
   await loadTicket()
   await loadComments()
+  await loadHistory()
 }
 
 onMounted(async () => {
   await loadTicket()
   await loadComments()
+  await loadHistory()
 
   syncTimerId = window.setInterval(() => {
     void syncTicketState()
@@ -225,6 +235,55 @@ onBeforeUnmount(() => {
         </div>
 
         <div class="comments-section">
+          <div v-if="canViewHistory" class="history-section">
+            <div class="history-section__header">
+              <div>
+                <h3>История действий</h3>
+                <p>Лента изменений по заявке с указанием исполнителя и времени</p>
+              </div>
+
+              <el-button text :loading="historyLoading" @click="loadHistory">Обновить</el-button>
+            </div>
+
+            <el-alert
+              v-if="historyLoadError"
+              :title="historyLoadError"
+              type="error"
+              show-icon
+              :closable="false"
+              class="history-section__alert"
+            />
+
+            <div class="history-list" v-loading="historyLoading">
+              <el-empty
+                v-if="!historyLoading && historyEntries.length === 0 && !historyLoadError"
+                description="История действий пока пуста"
+              />
+
+              <div v-else-if="historyEntries.length > 0" class="history-list__items">
+                <article
+                  v-for="entry in historyEntries"
+                  :key="entry.id || `${entry.actionType}-${entry.createdAt}`"
+                  class="history-item"
+                >
+                  <div class="history-item__top-row">
+                    <div class="history-item__action">{{ entry.actionLabel }}</div>
+                    <div class="history-item__date">{{ formatDateTime(entry.createdAt) }}</div>
+                  </div>
+
+                  <div class="history-item__meta">
+                    Выполнил:
+                    <span>{{ entry.actorFullName || `ID: ${entry.actorId || '—'}` }}</span>
+                  </div>
+
+                  <p v-if="entry.description" class="history-item__description">
+                    {{ entry.description }}
+                  </p>
+                </article>
+              </div>
+            </div>
+          </div>
+
           <div class="comments-section__header">
             <div>
               <h3>Комментарии</h3>
@@ -350,6 +409,91 @@ onBeforeUnmount(() => {
   border-radius: 6px;
   padding: 16px;
   background-color: var(--el-fill-color-light);
+}
+
+.history-section {
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 6px;
+  padding: 16px;
+  background: var(--el-bg-color);
+  margin-bottom: 16px;
+}
+
+.history-section__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.history-section__header h3 {
+  margin: 0;
+  font-size: 16px;
+  color: var(--el-text-color-primary);
+}
+
+.history-section__header p {
+  margin: 4px 0 0;
+  color: var(--el-text-color-secondary);
+  font-size: 13px;
+}
+
+.history-section__alert {
+  margin-bottom: 16px;
+}
+
+.history-list {
+  min-height: 72px;
+}
+
+.history-list__items {
+  display: grid;
+  gap: 12px;
+}
+
+.history-item {
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 6px;
+  padding: 14px 16px;
+  background: var(--el-fill-color-extra-light);
+}
+
+.history-item__top-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.history-item__action {
+  font-weight: 600;
+  color: var(--el-text-color-primary);
+}
+
+.history-item__date {
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+  white-space: nowrap;
+}
+
+.history-item__meta {
+  font-size: 13px;
+  color: var(--el-text-color-regular);
+}
+
+.history-item__meta span {
+  font-weight: 600;
+  color: var(--el-text-color-primary);
+}
+
+.history-item__description {
+  margin: 8px 0 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--el-text-color-regular);
+  line-height: 1.5;
 }
 
 .comments-section__header {
