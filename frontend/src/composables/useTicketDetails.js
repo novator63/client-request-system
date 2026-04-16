@@ -3,17 +3,19 @@ import { ElMessageBox } from 'element-plus'
 import {
   assignTicketApi,
   closeTicketApi,
+  deleteTicketApi,
   getCategoriesForTicketApi,
   getTicketByIdApi,
   updateTicketClassificationApi,
   updateTicketStatusApi,
 } from '../api/tickets.api'
-import { USER_ROLES } from '../constants/ticket.constants'
+import { isClosedTicketStatus, USER_ROLES } from '../constants/ticket.constants'
 import { notifyApiError, notifySuccess } from '../utils/errorHandler'
 
-export const useTicketDetails = ({ route, authStore }) => {
+export const useTicketDetails = ({ route, router, authStore }) => {
   const loading = ref(false)
   const updating = ref(false)
+  const deleting = ref(false)
   const ticket = ref(null)
   const categories = ref([])
   const notFound = ref(false)
@@ -75,6 +77,10 @@ export const useTicketDetails = ({ route, authStore }) => {
 
   const enterEditMode = () => {
     if (!ticket.value) {
+      return
+    }
+
+    if (isClosedTicketStatus(ticket.value.status) && !isAdmin.value) {
       return
     }
 
@@ -154,9 +160,45 @@ export const useTicketDetails = ({ route, authStore }) => {
     }
   }
 
+  const deleteTicket = async () => {
+    if (!ticket.value || !isAdmin.value) {
+      return
+    }
+
+    try {
+      await ElMessageBox.confirm(
+        'Вы уверены, что хотите удалить эту заявку? Действие необратимо.',
+        'Подтверждение удаления',
+        {
+          confirmButtonText: 'Удалить',
+          cancelButtonText: 'Отмена',
+          type: 'warning',
+          confirmButtonClass: 'el-button--danger',
+        },
+      )
+    } catch {
+      return
+    }
+
+    deleting.value = true
+
+    try {
+      await deleteTicketApi(ticketId.value)
+      notifySuccess('Заявка успешно удалена')
+      await router.push('/tickets')
+    } catch (error) {
+      notifyApiError(error, {
+        fallbackMessage: 'Не удалось удалить заявку',
+      })
+    } finally {
+      deleting.value = false
+    }
+  }
+
   return {
     loading,
     updating,
+    deleting,
     ticket,
     categories,
     notFound,
@@ -175,5 +217,6 @@ export const useTicketDetails = ({ route, authStore }) => {
     cancelEdit,
     saveChanges,
     closeTicket,
+    deleteTicket,
   }
 }

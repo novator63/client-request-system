@@ -212,6 +212,12 @@ public class TicketService {
 		return ticketMapper.toResponse(savedTicket);
 	}
 
+	@Transactional
+	public void delete(Long id) {
+		Ticket ticket = findTicketById(id);
+		ticketRepository.delete(ticket);
+	}
+
 	private Ticket findTicketById(Long id) {
 		return ticketRepository.findById(id)
 			.orElseThrow(TicketNotFoundException::new);

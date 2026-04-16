@@ -74,3 +74,8 @@ export const closeTicketApi = async (id) => {
   const { data } = await http.post(`/tickets/${id}/close`)
   return data
 }
+
+export const deleteTicketApi = async (id) => {
+  const { data } = await http.delete(`/tickets/${id}`)
+  return data
+}

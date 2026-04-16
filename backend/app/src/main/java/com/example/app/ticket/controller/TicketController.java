@@ -12,6 +12,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -24,6 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 import static org.springframework.http.HttpStatus.CREATED;
+import static org.springframework.http.HttpStatus.NO_CONTENT;
 
 @RestController
 @RequestMapping("/tickets")
@@ -95,5 +97,12 @@ public class TicketController {
 	@PreAuthorize("@ticketAccess.canModifyTicket(#id)")
 	public TicketResponse close(@PathVariable @Positive(message = "Ticket id must be positive") Long id) {
 		return ticketService.close(id);
+	}
+
+	@DeleteMapping("/{id}")
+	@ResponseStatus(NO_CONTENT)
+	@PreAuthorize("hasRole('ADMIN')")
+	public void delete(@PathVariable @Positive(message = "Ticket id must be positive") Long id) {
+		ticketService.delete(id);
 	}
 }

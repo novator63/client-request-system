@@ -13,6 +13,7 @@ const authStore = useAuthStore()
 const {
   loading,
   updating,
+  deleting,
   ticket,
   categories,
   notFound,
@@ -31,7 +32,8 @@ const {
   cancelEdit,
   saveChanges,
   closeTicket,
-} = useTicketDetails({ route, authStore })
+  deleteTicket,
+} = useTicketDetails({ route, router, authStore })
 const ticketStatus = computed(() => ticket.value?.status)
 const isTicketClosed = computed(() => isClosedTicketStatus(ticketStatus.value))
 const {
@@ -78,7 +80,7 @@ onBeforeUnmount(() => {
           <h1>Заявка #{{ ticketId }}</h1>
           <div class="header-actions">
             <el-button
-              v-if="canEdit && !editMode && !isTicketClosed"
+              v-if="canEdit && !editMode && (!isTicketClosed || isAdmin)"
               @click="enterEditMode"
               type="primary"
             >
@@ -87,6 +89,16 @@ onBeforeUnmount(() => {
             <el-button v-if="editMode" @click="cancelEdit">Отмена</el-button>
             <el-button v-if="editMode" @click="saveChanges" type="primary" :loading="updating">
               Сохранить
+            </el-button>
+            <el-button
+              v-if="editMode && isAdmin"
+              @click="deleteTicket"
+              type="danger"
+              plain
+              :loading="deleting"
+              :disabled="updating"
+            >
+              Удалить
             </el-button>
             <el-button @click="router.push('/tickets')">К списку</el-button>
           </div>
