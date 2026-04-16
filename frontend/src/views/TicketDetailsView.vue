@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onBeforeUnmount, onMounted } from 'vue'
+import { computed, onBeforeUnmount, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useTicketDetails } from '../composables/useTicketDetails'
@@ -57,18 +57,42 @@ const {
 } = useTicketHistory({ ticketId, authStore })
 
 let syncTimerId = null
+let isSyncInProgress = false
+let queuedSync = false
 
-const syncTicketState = async () => {
+const performDataSync = async () => {
   await loadTicket()
-  await loadComments()
-  await loadHistory()
+  await Promise.all([loadComments(), loadHistory()])
 }
 
-onMounted(async () => {
-  await loadTicket()
-  await loadComments()
-  await loadHistory()
+const syncTicketState = async () => {
+  if (isSyncInProgress) {
+    queuedSync = true
+    return
+  }
 
+  isSyncInProgress = true
+
+  try {
+    do {
+      queuedSync = false
+      await performDataSync()
+    } while (queuedSync)
+  } finally {
+    isSyncInProgress = false
+  }
+}
+
+watch(
+  ticketId,
+  () => {
+    cancelEdit()
+    void syncTicketState()
+  },
+  { immediate: true },
+)
+
+onMounted(() => {
   syncTimerId = window.setInterval(() => {
     void syncTicketState()
   }, 15000)

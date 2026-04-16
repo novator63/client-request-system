@@ -25,6 +25,8 @@ export const useTicketDetails = ({ route, router, authStore }) => {
   const editPriority = ref(null)
   const editCategory = ref(null)
   const editAssigneeId = ref(null)
+  let loadTicketPromise = null
+  let categoriesLoaded = false
 
   const ticketId = computed(() => route.params.id)
   const isAdmin = computed(() => authStore.user?.role === USER_ROLES.ADMIN)
@@ -46,32 +48,54 @@ export const useTicketDetails = ({ route, router, authStore }) => {
   })
 
   const loadCategories = async () => {
+    if (categoriesLoaded) {
+      return
+    }
+
     try {
       categories.value = await getCategoriesForTicketApi()
+      categoriesLoaded = true
     } catch {
       categories.value = []
+      categoriesLoaded = false
     }
   }
 
   const loadTicket = async () => {
-    loading.value = true
-    notFound.value = false
+    if (loadTicketPromise) {
+      return loadTicketPromise
+    }
+
+    loadTicketPromise = (async () => {
+      loading.value = true
+      notFound.value = false
+
+      try {
+        ticket.value = await getTicketByIdApi(ticketId.value)
+
+        if (isAdmin.value) {
+          await loadCategories()
+        }
+      } catch (error) {
+        if (error.response?.status === 404) {
+          ticket.value = null
+          notFound.value = true
+          return
+        }
+
+        ticket.value = null
+        notifyApiError(error, {
+          fallbackMessage: 'Не удалось загрузить заявку',
+        })
+      } finally {
+        loading.value = false
+      }
+    })()
 
     try {
-      ticket.value = await getTicketByIdApi(ticketId.value)
-      await loadCategories()
-    } catch (error) {
-      if (error.response?.status === 404) {
-        notFound.value = true
-        return
-      }
-
-      ticket.value = null
-      notifyApiError(error, {
-        fallbackMessage: 'Не удалось загрузить заявку',
-      })
+      await loadTicketPromise
     } finally {
-      loading.value = false
+      loadTicketPromise = null
     }
   }
 

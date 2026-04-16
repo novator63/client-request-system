@@ -1,4 +1,4 @@
-import { computed, ref, unref, watch } from 'vue'
+import { computed, ref, unref } from 'vue'
 import { getTicketHistoryApi } from '../api/history.api'
 import { USER_ROLES } from '../constants/ticket.constants'
 import { parseApiError } from '../utils/errorHandler'
@@ -30,6 +30,7 @@ export const useTicketHistory = ({ ticketId, authStore }) => {
   const historyEntries = ref([])
   const historyLoading = ref(false)
   const historyLoadError = ref('')
+  let loadHistoryPromise = null
 
   const currentTicketId = computed(() => unref(ticketId))
   const currentUserRole = computed(() => authStore.user?.role)
@@ -38,6 +39,10 @@ export const useTicketHistory = ({ ticketId, authStore }) => {
   })
 
   const loadHistory = async () => {
+    if (loadHistoryPromise) {
+      return loadHistoryPromise
+    }
+
     const ticketIdValue = currentTicketId.value
 
     historyLoadError.value = ''
@@ -47,28 +52,28 @@ export const useTicketHistory = ({ ticketId, authStore }) => {
       return
     }
 
-    historyLoading.value = true
+    loadHistoryPromise = (async () => {
+      historyLoading.value = true
+
+      try {
+        const response = await getTicketHistoryApi(ticketIdValue)
+        historyEntries.value = response.entries.map(normalizeHistoryEntry)
+      } catch (error) {
+        historyEntries.value = []
+        historyLoadError.value = parseApiError(error, {
+          fallbackMessage: 'Не удалось загрузить историю действий',
+        })
+      } finally {
+        historyLoading.value = false
+      }
+    })()
 
     try {
-      const response = await getTicketHistoryApi(ticketIdValue)
-      historyEntries.value = response.entries.map(normalizeHistoryEntry)
-    } catch (error) {
-      historyEntries.value = []
-      historyLoadError.value = parseApiError(error, {
-        fallbackMessage: 'Не удалось загрузить историю действий',
-      })
+      await loadHistoryPromise
     } finally {
-      historyLoading.value = false
+      loadHistoryPromise = null
     }
   }
-
-  watch(
-    [currentTicketId, canViewHistory],
-    () => {
-      void loadHistory()
-    },
-    { immediate: true },
-  )
 
   return {
     historyEntries,

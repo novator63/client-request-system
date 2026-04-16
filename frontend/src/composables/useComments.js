@@ -1,4 +1,4 @@
-import { computed, ref, unref, watch } from 'vue'
+import { computed, ref, unref } from 'vue'
 import { createCommentByTicketIdApi, getCommentsByTicketIdApi } from '../api/comments.api'
 import { getTicketByIdApi } from '../api/tickets.api'
 import { isClosedTicketStatus } from '../constants/ticket.constants'
@@ -10,6 +10,7 @@ export const useComments = ({ ticketId, ticketStatus }) => {
   const commentsLoadError = ref('')
   const submittingComment = ref(false)
   const commentText = ref('')
+  let loadCommentsPromise = null
 
   const currentTicketId = computed(() => unref(ticketId))
   const currentTicketStatus = computed(() => unref(ticketStatus))
@@ -25,29 +26,42 @@ export const useComments = ({ ticketId, ticketStatus }) => {
   })
 
   const loadComments = async () => {
+    if (loadCommentsPromise) {
+      return loadCommentsPromise
+    }
+
     const ticketIdValue = currentTicketId.value
 
     commentsLoadError.value = ''
 
     if (!ticketIdValue) {
+      commentText.value = ''
       comments.value = []
       return
     }
 
-    commentsLoading.value = true
+    loadCommentsPromise = (async () => {
+      commentsLoading.value = true
+
+      try {
+        comments.value = await getCommentsByTicketIdApi(ticketIdValue)
+      } catch (error) {
+        if (error.response?.status !== 404) {
+          commentsLoadError.value = parseApiError(error, {
+            fallbackMessage: 'Не удалось загрузить комментарии',
+          })
+        }
+
+        comments.value = []
+      } finally {
+        commentsLoading.value = false
+      }
+    })()
 
     try {
-      comments.value = await getCommentsByTicketIdApi(ticketIdValue)
-    } catch (error) {
-      if (error.response?.status !== 404) {
-        commentsLoadError.value = parseApiError(error, {
-          fallbackMessage: 'Не удалось загрузить комментарии',
-        })
-      }
-
-      comments.value = []
+      await loadCommentsPromise
     } finally {
-      commentsLoading.value = false
+      loadCommentsPromise = null
     }
   }
 
@@ -87,15 +101,6 @@ export const useComments = ({ ticketId, ticketStatus }) => {
       submittingComment.value = false
     }
   }
-
-  watch(
-    currentTicketId,
-    () => {
-      commentText.value = ''
-      void loadComments()
-    },
-    { immediate: true },
-  )
 
   return {
     comments,
