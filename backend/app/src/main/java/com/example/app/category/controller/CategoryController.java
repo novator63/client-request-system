@@ -6,6 +6,7 @@ import com.example.app.category.dto.response.CategoryResponse;
 import com.example.app.category.service.CategoryService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -35,21 +36,25 @@ public class CategoryController {
 
 	@PostMapping
 	@ResponseStatus(CREATED)
+	@PreAuthorize("hasRole('ADMIN')")
 	public CategoryResponse create(@Valid @RequestBody CreateCategoryRequest request) {
 		return categoryService.create(request);
 	}
 
 	@GetMapping
+	@PreAuthorize("hasAnyRole('ADMIN','OPERATOR')")
 	public List<CategoryResponse> getAll() {
 		return categoryService.getAll();
 	}
 
 	@GetMapping("/{id}")
+	@PreAuthorize("hasAnyRole('ADMIN','OPERATOR')")
 	public CategoryResponse getById(@PathVariable @Positive(message = "Category id must be positive") Long id) {
 		return categoryService.getById(id);
 	}
 
 	@PutMapping("/{id}")
+	@PreAuthorize("hasRole('ADMIN')")
 	public CategoryResponse update(
 		@PathVariable @Positive(message = "Category id must be positive") Long id,
 		@Valid @RequestBody UpdateCategoryRequest request
@@ -59,6 +64,7 @@ public class CategoryController {
 
 	@DeleteMapping("/{id}")
 	@ResponseStatus(NO_CONTENT)
+	@PreAuthorize("hasRole('ADMIN')")
 	public void delete(@PathVariable @Positive(message = "Category id must be positive") Long id) {
 		categoryService.delete(id);
 	}

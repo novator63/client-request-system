@@ -35,7 +35,10 @@ public class RefreshTokenCookieService {
 			.findFirst();
 	}
 
+	// Метод для добавления cookie с refresh токеном в ответ, который будет отправляться клиенту при успешной аутентификации или обновлении токена
 	public void addRefreshTokenCookie(HttpServletResponse response, String refreshToken) {
+		
+		// Создаем cookie с помощью ResponseCookie, устанавливая необходимые атрибуты безопасности и срок действия, который соответствует сроку действия refresh токена
 		ResponseCookie cookie = ResponseCookie.from(properties.getName(), refreshToken)
 			.httpOnly(true)
 			.secure(properties.isSecure())
@@ -44,6 +47,7 @@ public class RefreshTokenCookieService {
 			.maxAge(jwtProperties.getRefreshExpiration())
 			.build();
 
+		// Добавляем cookie в заголовок ответа, чтобы клиент мог сохранить его и использовать для последующих запросов на обновление токена
 		response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
 	}
 

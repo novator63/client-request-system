@@ -10,6 +10,7 @@ import com.example.app.ticket.dto.response.TicketResponse;
 import com.example.app.ticket.service.TicketService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -37,21 +38,25 @@ public class TicketController {
 
 	@PostMapping
 	@ResponseStatus(CREATED)
+	@PreAuthorize("hasAnyRole('ADMIN','OPERATOR','CLIENT')")
 	public TicketResponse create(@Valid @RequestBody CreateTicketRequest request) {
 		return ticketService.create(request);
 	}
 
 	@GetMapping
+	@PreAuthorize("hasAnyRole('ADMIN','OPERATOR','CLIENT')")
 	public List<TicketListItemResponse> getAll() {
 		return ticketService.getAll();
 	}
 
 	@GetMapping("/{id}")
+	@PreAuthorize("hasAnyRole('ADMIN','OPERATOR') or @ticketAccess.canReadTicket(#id)")
 	public TicketResponse getById(@PathVariable @Positive(message = "Ticket id must be positive") Long id) {
 		return ticketService.getById(id);
 	}
 
 	@PatchMapping("/{id}")
+	@PreAuthorize("hasAnyRole('ADMIN','OPERATOR')")
 	public TicketResponse update(
 		@PathVariable @Positive(message = "Ticket id must be positive") Long id,
 		@Valid @RequestBody UpdateTicketRequest request
@@ -60,6 +65,7 @@ public class TicketController {
 	}
 
 	@PatchMapping("/{id}/assign")
+	@PreAuthorize("hasAnyRole('ADMIN','OPERATOR')")
 	public TicketResponse assign(
 		@PathVariable @Positive(message = "Ticket id must be positive") Long id,
 		@Valid @RequestBody AssignTicketRequest request
@@ -68,6 +74,7 @@ public class TicketController {
 	}
 
 	@PatchMapping("/{id}/classification")
+	@PreAuthorize("hasAnyRole('ADMIN','OPERATOR')")
 	public TicketResponse updateClassification(
 		@PathVariable @Positive(message = "Ticket id must be positive") Long id,
 		@Valid @RequestBody UpdateTicketClassificationRequest request
@@ -76,6 +83,7 @@ public class TicketController {
 	}
 
 	@PatchMapping("/{id}/status")
+	@PreAuthorize("hasAnyRole('ADMIN','OPERATOR')")
 	public TicketResponse updateStatus(
 		@PathVariable @Positive(message = "Ticket id must be positive") Long id,
 		@Valid @RequestBody UpdateTicketStatusRequest request
@@ -84,6 +92,7 @@ public class TicketController {
 	}
 
 	@PostMapping("/{id}/close")
+	@PreAuthorize("hasAnyRole('ADMIN','OPERATOR')")
 	public TicketResponse close(@PathVariable @Positive(message = "Ticket id must be positive") Long id) {
 		return ticketService.close(id);
 	}

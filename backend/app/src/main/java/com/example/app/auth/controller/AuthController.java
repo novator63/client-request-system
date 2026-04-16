@@ -9,6 +9,7 @@ import com.example.app.user.dto.response.UserResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -41,6 +42,7 @@ public class AuthController {
 	}
 
 	@GetMapping("/me")
+	@PreAuthorize("isAuthenticated()")
 	public UserResponse me() {
 		return authService.getCurrentUser();
 	}

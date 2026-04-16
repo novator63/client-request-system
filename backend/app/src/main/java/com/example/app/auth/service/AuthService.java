@@ -62,6 +62,8 @@ public class AuthService {
 		String refreshToken = jwtService.generateRefreshToken(user);
 		Instant refreshExpiresAt = jwtService.extractExpiration(refreshToken);
 		refreshTokenService.create(user, refreshToken, refreshExpiresAt);
+
+		// Добавляем cookie с refresh токеном в ответ, который будет отправляться клиенту при успешной аутентификации
 		refreshTokenCookieService.addRefreshTokenCookie(response, refreshToken);
 
 		return new LoginResponse(accessToken, "Bearer", accessExpiresAt);

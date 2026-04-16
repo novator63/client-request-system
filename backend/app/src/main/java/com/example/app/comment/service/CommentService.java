@@ -1,6 +1,6 @@
 package com.example.app.comment.service;
 
-import com.example.app.auth.exception.UnauthenticatedException;
+import com.example.app.auth.security.CurrentUserService;
 import com.example.app.comment.dto.request.CreateCommentRequest;
 import com.example.app.comment.dto.response.CommentResponse;
 import com.example.app.comment.entity.Comment;
@@ -12,11 +12,6 @@ import com.example.app.ticket.exception.TicketBadRequestException;
 import com.example.app.ticket.exception.TicketNotFoundException;
 import com.example.app.ticket.repository.TicketRepository;
 import com.example.app.user.entity.User;
-import com.example.app.user.exception.UserNotFoundException;
-import com.example.app.user.repository.UserRepository;
-import org.springframework.security.authentication.AnonymousAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,22 +23,22 @@ public class CommentService {
 
 	private final CommentRepository commentRepository;
 	private final TicketRepository ticketRepository;
-	private final UserRepository userRepository;
 	private final CommentMapper commentMapper;
 	private final HistoryService historyService;
+	private final CurrentUserService currentUserService;
 
 	public CommentService(
 		CommentRepository commentRepository,
 		TicketRepository ticketRepository,
-		UserRepository userRepository,
 		CommentMapper commentMapper,
-		HistoryService historyService
+		HistoryService historyService,
+		CurrentUserService currentUserService
 	) {
 		this.commentRepository = commentRepository;
 		this.ticketRepository = ticketRepository;
-		this.userRepository = userRepository;
 		this.commentMapper = commentMapper;
 		this.historyService = historyService;
+		this.currentUserService = currentUserService;
 	}
 
 	@Transactional
@@ -76,16 +71,7 @@ public class CommentService {
 	}
 
 	private User getCurrentUserEntity() {
-		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-		if (authentication == null
-			|| !authentication.isAuthenticated()
-			|| authentication instanceof AnonymousAuthenticationToken) {
-			throw new UnauthenticatedException();
-		}
-
-		String email = authentication.getName();
-		return userRepository.findByEmail(email)
-			.orElseThrow(UserNotFoundException::new);
+		return currentUserService.requireCurrentUser();
 	}
 
 	private String requireText(String value, String message) {

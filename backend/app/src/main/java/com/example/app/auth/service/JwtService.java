@@ -32,6 +32,7 @@ public class JwtService {
 		this.signingKey = buildSigningKey(jwtProperties.getSecret());
 	}
 
+	// Метод для генерации access токена, который содержит информацию о пользователе и его роли
 	public String generateAccessToken(User user) {
 		Map<String, Object> claims = new HashMap<>();
 		claims.put("role", user.getRole().name());
@@ -41,6 +42,7 @@ public class JwtService {
 		return generateToken(user.getEmail(), claims, jwtProperties.getAccessExpiration());
 	}
 
+	// Метод для генерации refresh токена, который не содержит чувствительных данных и имеет другой тип
 	public String generateRefreshToken(User user) {
 		Map<String, Object> claims = new HashMap<>();
 		claims.put(TYPE_CLAIM, REFRESH_TYPE);

@@ -1,6 +1,6 @@
 package com.example.app.ticket.service;
 
-import com.example.app.auth.exception.UnauthenticatedException;
+import com.example.app.auth.security.CurrentUserService;
 import com.example.app.category.entity.Category;
 import com.example.app.category.exception.CategoryNotFoundException;
 import com.example.app.category.repository.CategoryRepository;
@@ -20,11 +20,9 @@ import com.example.app.ticket.exception.TicketNotFoundException;
 import com.example.app.ticket.mapper.TicketMapper;
 import com.example.app.ticket.repository.TicketRepository;
 import com.example.app.user.entity.User;
+import com.example.app.user.entity.UserRole;
 import com.example.app.user.exception.UserNotFoundException;
 import com.example.app.user.repository.UserRepository;
-import org.springframework.security.authentication.AnonymousAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,6 +39,7 @@ public class TicketService {
 	private final TicketMapper ticketMapper;
 	private final HistoryService historyService;
 	private final SlaService slaService;
+	private final CurrentUserService currentUserService;
 
 	public TicketService(
 		TicketRepository ticketRepository,
@@ -48,7 +47,8 @@ public class TicketService {
 		UserRepository userRepository,
 		TicketMapper ticketMapper,
 		HistoryService historyService,
-		SlaService slaService
+		SlaService slaService,
+		CurrentUserService currentUserService
 	) {
 		this.ticketRepository = ticketRepository;
 		this.categoryRepository = categoryRepository;
@@ -56,6 +56,7 @@ public class TicketService {
 		this.ticketMapper = ticketMapper;
 		this.historyService = historyService;
 		this.slaService = slaService;
+		this.currentUserService = currentUserService;
 	}
 
 	@Transactional
@@ -79,7 +80,11 @@ public class TicketService {
 	}
 
 	public List<TicketListItemResponse> getAll() {
-		return ticketRepository.findAllByOrderByCreatedAtDesc()
+		List<Ticket> tickets = currentUserService.hasRole(UserRole.CLIENT)
+			? ticketRepository.findAllByAuthorIdOrderByCreatedAtDesc(currentUserService.requireCurrentUserId())
+			: ticketRepository.findAllByOrderByCreatedAtDesc();
+
+		return tickets
 			.stream()
 			.map(ticketMapper::toListItemResponse)
 			.toList();
@@ -206,16 +211,7 @@ public class TicketService {
 	}
 
 	private User getCurrentUserEntity() {
-		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-		if (authentication == null
-			|| !authentication.isAuthenticated()
-			|| authentication instanceof AnonymousAuthenticationToken) {
-			throw new UnauthenticatedException();
-		}
-
-		String email = authentication.getName();
-		return userRepository.findByEmail(email)
-			.orElseThrow(UserNotFoundException::new);
+		return currentUserService.requireCurrentUser();
 	}
 
 	private String requireText(String value, String message) {

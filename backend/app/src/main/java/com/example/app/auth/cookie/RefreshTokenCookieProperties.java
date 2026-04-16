@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 public class RefreshTokenCookieProperties {
 
 	private String name = "refreshToken";
-	private String path = "/api/auth";
+	private String path = "/auth";
 	private boolean secure;
 	private String sameSite = "Lax";
 
