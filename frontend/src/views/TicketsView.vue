@@ -3,7 +3,7 @@ import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useTicketsList } from '../composables/useTicketsList'
-import { STATUS_OPTIONS } from '../constants/ticket.constants'
+import { STATUS_OPTIONS, PRIORITY_OPTIONS } from '../constants/ticket.constants'
 import { formatDateTime, getAssigneeLabel, getPriorityLabel, getStatusLabel } from '../utils/ticketFormatters'
 
 const router = useRouter()
@@ -43,7 +43,7 @@ onMounted(loadTickets)
       </template>
 
       <div class="tickets-page__filters">
-        <el-select v-model="filters.status" placeholder="Статус" clearable @change="resetPage">
+        <el-select v-model="filters.status" placeholder="Статус" clearable :disabled="loading" @change="resetPage">
           <el-option
             v-for="option in STATUS_OPTIONS"
             :key="option.value"
@@ -57,6 +57,7 @@ onMounted(loadTickets)
           v-model="filters.priority"
           placeholder="Приоритет"
           clearable
+          :disabled="loading"
           @change="resetPage"
         >
           <el-option
@@ -67,7 +68,7 @@ onMounted(loadTickets)
           />
         </el-select>
 
-        <el-select v-model="filters.category" placeholder="Категория" clearable @change="resetPage">
+        <el-select v-model="filters.category" placeholder="Категория" clearable :disabled="loading" @change="resetPage">
           <el-option
             v-for="option in categoryOptions"
             :key="option.value"
@@ -80,11 +81,14 @@ onMounted(loadTickets)
           v-model="filters.query"
           placeholder="Поиск по номеру, теме, категории..."
           clearable
+          :disabled="loading"
           @input="resetPage"
         />
       </div>
 
-      <el-table :data="paginatedTickets" v-loading="loading" stripe @row-click="openTicket">
+      <el-empty v-if="!loading && paginatedTickets.length === 0" description="Нет заявок для отображения" />
+
+      <el-table v-else :data="paginatedTickets" v-loading="loading" stripe @row-click="openTicket">
         <el-table-column prop="id" label="Номер" min-width="90" />
         <el-table-column prop="title" label="Тема" min-width="220" show-overflow-tooltip />
         <el-table-column label="Статус" min-width="130">
@@ -116,6 +120,7 @@ onMounted(loadTickets)
           layout="total, sizes, prev, pager, next"
           :total="total"
           :page-sizes="[10, 20, 50]"
+          :disabled="loading"
         />
       </div>
     </el-card>

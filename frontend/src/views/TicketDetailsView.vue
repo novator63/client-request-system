@@ -117,11 +117,12 @@ onBeforeUnmount(() => {
               v-if="canEdit && !editMode && (!isTicketClosed || isAdmin)"
               @click="enterEditMode"
               type="primary"
+              :disabled="deleting"
             >
               Редактировать
             </el-button>
-            <el-button v-if="editMode" @click="cancelEdit">Отмена</el-button>
-            <el-button v-if="editMode" @click="saveChanges" type="primary" :loading="updating">
+            <el-button v-if="editMode" @click="cancelEdit" :disabled="updating || deleting">Отмена</el-button>
+            <el-button v-if="editMode" @click="saveChanges" type="primary" :loading="updating" :disabled="deleting">
               Сохранить
             </el-button>
             <el-button
@@ -134,7 +135,7 @@ onBeforeUnmount(() => {
             >
               Удалить
             </el-button>
-            <el-button @click="router.push('/tickets')">К списку</el-button>
+            <el-button @click="router.push('/tickets')" :disabled="deleting">К списку</el-button>
           </div>
         </div>
       </template>
@@ -167,6 +168,7 @@ onBeforeUnmount(() => {
               plain
               @click="closeTicket"
               :loading="updating"
+              :disabled="editMode || deleting"
             >
               Закрыть заявку
             </el-button>
@@ -176,7 +178,7 @@ onBeforeUnmount(() => {
             <!-- Статус (для всех) -->
             <el-form-item label="Статус">
               <template v-if="editMode">
-                <el-select v-model="editStatus" placeholder="Выберите статус">
+                <el-select v-model="editStatus" placeholder="Выберите статус" :disabled="deleting">
                   <el-option
                     v-for="status in TICKET_STATUSES"
                     :key="status"
@@ -194,7 +196,7 @@ onBeforeUnmount(() => {
             <template v-if="isAdmin">
               <el-form-item label="Приоритет">
                 <template v-if="editMode">
-                  <el-select v-model="editPriority" placeholder="Выберите приоритет">
+                  <el-select v-model="editPriority" placeholder="Выберите приоритет" :disabled="deleting">
                     <el-option
                       v-for="priority in TICKET_PRIORITIES"
                       :key="priority"
@@ -210,7 +212,7 @@ onBeforeUnmount(() => {
 
               <el-form-item label="Категория">
                 <template v-if="editMode">
-                  <el-select v-model="editCategory" placeholder="Выберите категорию">
+                  <el-select v-model="editCategory" placeholder="Выберите категорию" :disabled="deleting">
                     <el-option
                       v-for="cat in categories"
                       :key="cat.id"
@@ -230,6 +232,7 @@ onBeforeUnmount(() => {
                     v-model="editAssigneeId"
                     :min="0"
                     placeholder="ID пользователя (0 - не назначен)"
+                    :disabled="deleting"
                   />
                 </template>
                 <template v-else>
@@ -312,7 +315,7 @@ onBeforeUnmount(() => {
             <div>
               <h3>Комментарии</h3>
               <p>
-                {{ isTicketClosed ? 'Только история комментариев' : 'Обсуждение заявки без перехода на отдельную страницу' }}
+                {{ isTicketClosed ? 'Заявка закрыта. Новые комментарии добавлять нельзя.' : 'Обсуждение заявки без перехода на отдельную страницу' }}
               </p>
             </div>
 

@@ -100,8 +100,15 @@ const loadCategories = async () => {
 
 const submit = async () => {
   if (!hasCategories.value) {
+    if (categoriesLoading.value) {
+      notifyApiError(null, {
+        fallbackMessage: 'Пожалуйста, дождитесь загрузки категорий',
+      })
+      return
+    }
+    
     notifyApiError(null, {
-      fallbackMessage: categoriesError.value || 'Невозможно создать заявку без доступных категорий',
+      fallbackMessage: categoriesError.value || 'Список категорий недоступен. Обратитесь к администратору.',
     })
     return
   }
@@ -172,6 +179,7 @@ onMounted(loadCategories)
             :maxlength="FIELD_LIMITS.subject"
             show-word-limit
             placeholder="Кратко опишите проблему"
+            :disabled="categoriesLoading"
           />
         </el-form-item>
 
@@ -183,6 +191,7 @@ onMounted(loadCategories)
             :maxlength="FIELD_LIMITS.description"
             show-word-limit
             placeholder="Подробно опишите ситуацию"
+            :disabled="categoriesLoading"
           />
         </el-form-item>
 
@@ -192,6 +201,7 @@ onMounted(loadCategories)
             :maxlength="FIELD_LIMITS.customerName"
             show-word-limit
             placeholder="Например: Иван Иванов"
+            :disabled="categoriesLoading"
           />
         </el-form-item>
 
@@ -201,6 +211,7 @@ onMounted(loadCategories)
             :maxlength="FIELD_LIMITS.customerEmail"
             show-word-limit
             placeholder="Например: client@example.com"
+            :disabled="categoriesLoading"
           />
         </el-form-item>
 
@@ -210,6 +221,7 @@ onMounted(loadCategories)
             :maxlength="FIELD_LIMITS.customerPhone"
             placeholder="900-200-30-40"
             @input="onPhoneInput"
+            :disabled="categoriesLoading"
           >
             <template #prepend>+7</template>
           </el-input>
@@ -218,7 +230,7 @@ onMounted(loadCategories)
         <el-form-item label="Категория" prop="category">
           <el-select
             v-model="form.category"
-            :placeholder="hasCategories ? 'Выберите категорию' : 'Категории недоступны'"
+            :placeholder="categoriesLoading ? 'Загрузка категорий...' : (hasCategories ? 'Выберите категорию' : 'Категории недоступны')"
             :loading="categoriesLoading"
             :disabled="!hasCategories"
           >
@@ -232,7 +244,7 @@ onMounted(loadCategories)
         </el-form-item>
 
         <div class="create-ticket-page__actions">
-          <el-button @click="router.push('/tickets')">Отмена</el-button>
+          <el-button @click="router.push('/tickets')" :disabled="loading || categoriesLoading">Отмена</el-button>
           <el-button type="primary" :loading="loading" :disabled="!canSubmit" @click="submit">
             Создать заявку
           </el-button>
