@@ -1,8 +1,10 @@
 <template>
   <section class="page">
     <el-card>
-      <h1 class="page__title">Заявки</h1>
-      <p class="page__description">Раздел со списком заявок. Пока это временная заглушка.</p>
+      <h1 class="page__title">Категории</h1>
+      <p class="page__description">
+        Управление категориями заявок будет добавлено на следующем этапе.
+      </p>
     </el-card>
   </section>
 </template>
