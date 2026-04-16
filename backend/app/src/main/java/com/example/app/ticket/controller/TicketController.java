@@ -50,7 +50,7 @@ public class TicketController {
 	}
 
 	@GetMapping("/{id}")
-	@PreAuthorize("hasAnyRole('ADMIN','OPERATOR') or @ticketAccess.canReadTicket(#id)")
+	@PreAuthorize("@ticketAccess.canReadTicket(#id)")
 	public TicketResponse getById(@PathVariable @Positive(message = "Ticket id must be positive") Long id) {
 		return ticketService.getById(id);
 	}

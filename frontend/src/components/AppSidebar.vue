@@ -1,19 +1,40 @@
 <script setup>
+import { computed } from 'vue'
 import { useRoute } from 'vue-router'
+import { useAuthStore } from '../stores/auth'
 
 const route = useRoute()
+const authStore = useAuthStore()
 
-const menuItems = [
-  { label: 'Заявки', path: '/' },
-  { label: 'Создать заявку', path: '/requests/create' },
-  { label: 'Категории', path: '/categories' },
-  { label: 'Отчеты', path: '/reports' },
-]
+const menuItems = computed(() => {
+  const role = authStore.user?.role
+
+  return [
+    { label: 'Заявки', path: '/tickets' },
+    { label: 'Создать заявку', path: '/tickets/create' },
+    ...(role === 'ADMIN' || role === 'OPERATOR'
+      ? [{ label: 'Категории', path: '/categories' }]
+      : []),
+    ...(role === 'ADMIN' ? [{ label: 'Отчеты', path: '/reports' }] : []),
+  ]
+})
+
+const activeMenuPath = computed(() => {
+  if (route.path.startsWith('/tickets/')) {
+    if (route.path === '/tickets/create') {
+      return '/tickets/create'
+    }
+
+    return '/tickets'
+  }
+
+  return route.path
+})
 </script>
 
 <template>
   <aside class="app-sidebar">
-    <el-menu :default-active="route.path" router class="app-sidebar__menu">
+    <el-menu :default-active="activeMenuPath" router class="app-sidebar__menu">
       <el-menu-item v-for="item in menuItems" :key="item.path" :index="item.path">
         {{ item.label }}
       </el-menu-item>

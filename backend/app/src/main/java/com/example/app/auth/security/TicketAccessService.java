@@ -16,20 +16,20 @@ public class TicketAccessService {
 	}
 
 	public boolean canReadTicket(Long ticketId) {
-		if (isPrivilegedRole()) {
+		if (currentUserService.hasRole(UserRole.ADMIN)) {
 			return true;
 		}
 
 		Long userId = currentUserService.requireCurrentUserId();
+
+		if (currentUserService.hasRole(UserRole.OPERATOR)) {
+			return ticketRepository.existsByIdAndAssigneeId(ticketId, userId);
+		}
+
 		return ticketRepository.existsByIdAndAuthorId(ticketId, userId);
 	}
 
 	public boolean canCommentTicket(Long ticketId) {
 		return canReadTicket(ticketId);
-	}
-
-	private boolean isPrivilegedRole() {
-		return currentUserService.hasRole(UserRole.ADMIN)
-			|| currentUserService.hasRole(UserRole.OPERATOR);
 	}
 }

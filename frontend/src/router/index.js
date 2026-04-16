@@ -5,8 +5,9 @@ import CategoriesView from '../views/CategoriesView.vue'
 import CreateRequestView from '../views/CreateRequestView.vue'
 import LoginView from '../views/LoginView.vue'
 import NotFoundView from '../views/NotFoundView.vue'
+import RequestDetailsView from '../views/RequestDetailsView.vue'
 import ReportsView from '../views/ReportsView.vue'
-import RequestsView from '../views/RequestsView.vue'
+import TicketsView from '../views/TicketsView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -24,23 +25,34 @@ const router = createRouter({
       children: [
         {
           path: '',
-          name: 'requests',
-          component: RequestsView,
+          redirect: '/tickets',
         },
         {
-          path: 'requests/create',
-          name: 'create-request',
+          path: 'tickets',
+          name: 'tickets',
+          component: TicketsView,
+        },
+        {
+          path: 'tickets/create',
+          name: 'create-ticket',
           component: CreateRequestView,
+        },
+        {
+          path: 'tickets/:id',
+          name: 'ticket-details',
+          component: RequestDetailsView,
         },
         {
           path: 'categories',
           name: 'categories',
           component: CategoriesView,
+          meta: { allowedRoles: ['ADMIN', 'OPERATOR'] },
         },
         {
           path: 'reports',
           name: 'reports',
           component: ReportsView,
+          meta: { allowedRoles: ['ADMIN'] },
         },
       ],
     },
@@ -58,6 +70,9 @@ router.beforeEach(async (to) => {
 
   const requiresAuth = to.matched.some((record) => record.meta.requiresAuth)
   const guestOnly = to.matched.some((record) => record.meta.guestOnly)
+  const allowedRoles = to.matched
+    .map((record) => record.meta.allowedRoles)
+    .find((roles) => Array.isArray(roles) && roles.length > 0)
 
   if (requiresAuth && !authStore.isAuthenticated) {
     return {
@@ -67,7 +82,15 @@ router.beforeEach(async (to) => {
   }
 
   if (guestOnly && authStore.isAuthenticated) {
-    return { name: 'requests' }
+    return { name: 'tickets' }
+  }
+
+  if (allowedRoles?.length) {
+    const currentRole = authStore.user?.role
+
+    if (!currentRole || !allowedRoles.includes(currentRole)) {
+      return { name: 'tickets' }
+    }
   }
 
   return true

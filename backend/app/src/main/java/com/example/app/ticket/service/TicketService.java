@@ -80,18 +80,26 @@ public class TicketService {
 	}
 
 	public List<TicketListItemResponse> getAll() {
-		List<Ticket> tickets = currentUserService.hasRole(UserRole.CLIENT)
-			? ticketRepository.findAllByAuthorIdOrderByCreatedAtDesc(currentUserService.requireCurrentUserId())
-			: ticketRepository.findAllByOrderByCreatedAtDesc();
+		Long currentUserId = currentUserService.requireCurrentUserId();
+
+		List<Ticket> tickets;
+		if (currentUserService.hasRole(UserRole.CLIENT)) {
+			tickets = ticketRepository.findAllByAuthorIdOrderByCreatedAtDesc(currentUserId);
+		} else if (currentUserService.hasRole(UserRole.OPERATOR)) {
+			tickets = ticketRepository.findAllByAssigneeIdOrderByCreatedAtDesc(currentUserId);
+		} else {
+			tickets = ticketRepository.findAllByOrderByCreatedAtDesc();
+		}
 
 		return tickets
 			.stream()
 			.map(ticketMapper::toListItemResponse)
+			.map(this::sanitizeListItemForCurrentRole)
 			.toList();
 	}
 
 	public TicketResponse getById(Long id) {
-		return ticketMapper.toResponse(findTicketById(id));
+		return sanitizeTicketResponseForCurrentRole(ticketMapper.toResponse(findTicketById(id)));
 	}
 
 	@Transactional
@@ -226,5 +234,49 @@ public class TicketService {
 		if (ticket.getStatus() == TicketStatus.CLOSED) {
 			throw new TicketBadRequestException("Closed ticket cannot be changed");
 		}
+	}
+
+	private TicketListItemResponse sanitizeListItemForCurrentRole(TicketListItemResponse response) {
+		if (!currentUserService.hasRole(UserRole.CLIENT)) {
+			return response;
+		}
+
+		return new TicketListItemResponse(
+			response.id(),
+			response.title(),
+			response.status(),
+			null,
+			response.authorId(),
+			null,
+			response.categoryId(),
+			response.categoryName(),
+			response.createdAt(),
+			response.updatedAt(),
+			response.dueAt()
+		);
+	}
+
+	private TicketResponse sanitizeTicketResponseForCurrentRole(TicketResponse response) {
+		if (!currentUserService.hasRole(UserRole.CLIENT)) {
+			return response;
+		}
+
+		return new TicketResponse(
+			response.id(),
+			response.title(),
+			response.description(),
+			response.status(),
+			null,
+			response.authorId(),
+			response.authorName(),
+			null,
+			null,
+			response.categoryId(),
+			response.categoryName(),
+			response.createdAt(),
+			response.updatedAt(),
+			response.closedAt(),
+			response.dueAt()
+		);
 	}
 }
