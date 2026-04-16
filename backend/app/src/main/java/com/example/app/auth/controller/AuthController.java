@@ -1,9 +1,13 @@
 package com.example.app.auth.controller;
 
 import com.example.app.auth.dto.request.LoginRequest;
+import com.example.app.auth.dto.response.AuthResponse;
 import com.example.app.auth.dto.response.LoginResponse;
+import com.example.app.auth.dto.response.RefreshResponse;
 import com.example.app.auth.service.AuthService;
 import com.example.app.user.dto.response.UserResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -22,8 +26,18 @@ public class AuthController {
 	}
 
 	@PostMapping("/login")
-	public LoginResponse login(@Valid @RequestBody LoginRequest request) {
-		return authService.login(request);
+	public LoginResponse login(@Valid @RequestBody LoginRequest request, HttpServletResponse response) {
+		return authService.login(request, response);
+	}
+
+	@PostMapping("/refresh")
+	public RefreshResponse refresh(HttpServletRequest request, HttpServletResponse response) {
+		return authService.refresh(request, response);
+	}
+
+	@PostMapping("/logout")
+	public AuthResponse logout(HttpServletRequest request, HttpServletResponse response) {
+		return authService.logout(request, response);
 	}
 
 	@GetMapping("/me")

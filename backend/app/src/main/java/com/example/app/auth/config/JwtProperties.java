@@ -10,7 +10,8 @@ import java.time.Duration;
 public class JwtProperties {
 
 	private String secret;
-	private Duration expiration;
+	private Duration accessExpiration = Duration.ofMinutes(15);
+	private Duration refreshExpiration = Duration.ofDays(7);
 
 	public String getSecret() {
 		return secret;
@@ -20,11 +21,19 @@ public class JwtProperties {
 		this.secret = secret;
 	}
 
-	public Duration getExpiration() {
-		return expiration;
+	public Duration getAccessExpiration() {
+		return accessExpiration;
 	}
 
-	public void setExpiration(Duration expiration) {
-		this.expiration = expiration;
+	public void setAccessExpiration(Duration accessExpiration) {
+		this.accessExpiration = accessExpiration;
+	}
+
+	public Duration getRefreshExpiration() {
+		return refreshExpiration;
+	}
+
+	public void setRefreshExpiration(Duration refreshExpiration) {
+		this.refreshExpiration = refreshExpiration;
 	}
 }
