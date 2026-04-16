@@ -32,4 +32,17 @@ public class TicketAccessService {
 	public boolean canCommentTicket(Long ticketId) {
 		return canReadTicket(ticketId);
 	}
+
+	public boolean canModifyTicket(Long ticketId) {
+		if (currentUserService.hasRole(UserRole.ADMIN)) {
+			return true;
+		}
+
+		if (!currentUserService.hasRole(UserRole.OPERATOR)) {
+			return false;
+		}
+
+		Long userId = currentUserService.requireCurrentUserId();
+		return ticketRepository.existsByIdAndAssigneeId(ticketId, userId);
+	}
 }

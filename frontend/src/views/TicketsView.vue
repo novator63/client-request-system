@@ -1,132 +1,25 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue'
-import { useAuthStore } from '../stores/auth'
+import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { getTicketsApi } from '../api/tickets.api'
+import { useAuthStore } from '../stores/auth'
+import { useTicketsList } from '../composables/useTicketsList'
+import { PRIORITY_OPTIONS, STATUS_OPTIONS } from '../constants/ticket.constants'
+import { formatDateTime, getAssigneeLabel, getPriorityLabel, getStatusLabel } from '../utils/ticketFormatters'
 
 const router = useRouter()
 const authStore = useAuthStore()
-
-const loading = ref(false)
-const tickets = ref([])
-
-const filters = ref({
-  status: '',
-  priority: '',
-  category: '',
-  query: '',
-})
-
-const page = ref(1)
-const pageSize = ref(10)
-
-const isClient = computed(() => authStore.user?.role === 'CLIENT')
-const isOperator = computed(() => authStore.user?.role === 'OPERATOR')
-
-const statusOptions = [
-  { label: 'Новый', value: 'NEW' },
-  { label: 'В работе', value: 'IN_PROGRESS' },
-  { label: 'Решен', value: 'RESOLVED' },
-  { label: 'Закрыт', value: 'CLOSED' },
-]
-
-const priorityOptions = [
-  { label: 'Низкий', value: 'LOW' },
-  { label: 'Средний', value: 'MEDIUM' },
-  { label: 'Высокий', value: 'HIGH' },
-]
-
-const categoryOptions = computed(() => {
-  const map = new Map()
-
-  roleScopedTickets.value.forEach((ticket) => {
-    if (ticket.categoryId || ticket.categoryName) {
-      map.set(ticket.categoryId, {
-        value: String(ticket.categoryId || ticket.categoryName),
-        label: ticket.categoryName || `Категория #${ticket.categoryId}`,
-      })
-    }
-  })
-
-  return Array.from(map.values())
-})
-
-const roleScopedTickets = computed(() => {
-  if (!isOperator.value) {
-    return tickets.value
-  }
-
-  const currentUserId = authStore.user?.id
-
-  return tickets.value.filter((ticket) => ticket.assigneeId === currentUserId)
-})
-
-const filteredTickets = computed(() => {
-  const normalizedQuery = filters.value.query.trim().toLowerCase()
-
-  return roleScopedTickets.value.filter((ticket) => {
-    const matchesStatus = !filters.value.status || ticket.status === filters.value.status
-    const matchesPriority =
-      isClient.value || !filters.value.priority || ticket.priority === filters.value.priority
-    const ticketCategoryValue = String(ticket.categoryId || ticket.categoryName || '')
-    const matchesCategory =
-      !filters.value.category || ticketCategoryValue === filters.value.category
-
-    const searchableText = [
-      ticket.id,
-      ticket.title,
-      ticket.status,
-      ...(isClient.value ? [] : [ticket.priority]),
-      ticket.categoryName,
-      ...(isClient.value ? [] : [ticket.assigneeName, ticket.assigneeId]),
-    ]
-      .filter(Boolean)
-      .join(' ')
-      .toLowerCase()
-
-    const matchesQuery = !normalizedQuery || searchableText.includes(normalizedQuery)
-
-    return matchesStatus && matchesPriority && matchesCategory && matchesQuery
-  })
-})
-
-const paginatedTickets = computed(() => {
-  const start = (page.value - 1) * pageSize.value
-  return filteredTickets.value.slice(start, start + pageSize.value)
-})
-
-const total = computed(() => filteredTickets.value.length)
-
-const statusLabel = (value) =>
-  statusOptions.find((option) => option.value === value)?.label || value || '—'
-const priorityLabel = (value) =>
-  priorityOptions.find((option) => option.value === value)?.label || value || '—'
-
-const dueAtLabel = (value) => {
-  if (!value) {
-    return '—'
-  }
-
-  const date = new Date(value)
-
-  if (Number.isNaN(date.getTime())) {
-    return value
-  }
-
-  return date.toLocaleString('ru-RU')
-}
-
-const assigneeLabel = (ticket) => {
-  if (ticket.assigneeName) {
-    return ticket.assigneeName
-  }
-
-  if (ticket.assigneeId) {
-    return `ID: ${ticket.assigneeId}`
-  }
-
-  return 'Не назначен'
-}
+const {
+  loading,
+  filters,
+  page,
+  pageSize,
+  isClient,
+  categoryOptions,
+  paginatedTickets,
+  total,
+  resetPage,
+  loadTickets,
+} = useTicketsList({ authStore })
 
 const openTicket = (ticket) => {
   if (!ticket?.id) {
@@ -134,21 +27,6 @@ const openTicket = (ticket) => {
   }
 
   router.push(`/tickets/${ticket.id}`)
-}
-
-const resetPage = () => {
-  page.value = 1
-}
-
-const loadTickets = async () => {
-  loading.value = true
-
-  try {
-    tickets.value = await getTicketsApi()
-  } finally {
-    loading.value = false
-    resetPage()
-  }
 }
 
 onMounted(loadTickets)
@@ -167,7 +45,7 @@ onMounted(loadTickets)
       <div class="tickets-page__filters">
         <el-select v-model="filters.status" placeholder="Статус" clearable @change="resetPage">
           <el-option
-            v-for="option in statusOptions"
+            v-for="option in STATUS_OPTIONS"
             :key="option.value"
             :label="option.label"
             :value="option.value"
@@ -182,7 +60,7 @@ onMounted(loadTickets)
           @change="resetPage"
         >
           <el-option
-            v-for="option in priorityOptions"
+            v-for="option in PRIORITY_OPTIONS"
             :key="option.value"
             :label="option.label"
             :value="option.value"
@@ -210,19 +88,19 @@ onMounted(loadTickets)
         <el-table-column prop="id" label="Номер" min-width="90" />
         <el-table-column prop="title" label="Тема" min-width="220" show-overflow-tooltip />
         <el-table-column label="Статус" min-width="130">
-          <template #default="scope">{{ statusLabel(scope.row.status) }}</template>
+          <template #default="scope">{{ getStatusLabel(scope.row.status) }}</template>
         </el-table-column>
         <el-table-column v-if="!isClient" label="Приоритет" min-width="130">
-          <template #default="scope">{{ priorityLabel(scope.row.priority) }}</template>
+          <template #default="scope">{{ getPriorityLabel(scope.row.priority) }}</template>
         </el-table-column>
         <el-table-column prop="categoryName" label="Категория" min-width="160">
           <template #default="scope">{{ scope.row.categoryName || '—' }}</template>
         </el-table-column>
         <el-table-column v-if="!isClient" label="Ответственный" min-width="160">
-          <template #default="scope">{{ assigneeLabel(scope.row) }}</template>
+          <template #default="scope">{{ getAssigneeLabel(scope.row) }}</template>
         </el-table-column>
         <el-table-column label="Срок" min-width="170">
-          <template #default="scope">{{ dueAtLabel(scope.row.dueAt) }}</template>
+          <template #default="scope">{{ formatDateTime(scope.row.dueAt) }}</template>
         </el-table-column>
         <el-table-column label="" width="120" fixed="right">
           <template #default="scope">

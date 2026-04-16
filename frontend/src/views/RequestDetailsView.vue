@@ -1,174 +1,34 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import {
-  getTicketByIdApi,
-  getCategoriesForTicketApi,
-  updateTicketStatusApi,
-  updateTicketClassificationApi,
-  assignTicketApi,
-  closeTicketApi
-} from '../api/tickets.api'
 import { useAuthStore } from '../stores/auth'
+import { useTicketDetails } from '../composables/useTicketDetails'
+import { TICKET_PRIORITIES, TICKET_STATUSES } from '../constants/ticket.constants'
+import { formatDateTime, getPriorityLabel, getStatusLabel } from '../utils/ticketFormatters'
 
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
-
-const loading = ref(false)
-const updating = ref(false)
-const ticket = ref(null)
-const categories = ref([])
-const notFound = ref(false)
-const editMode = ref(false)
-
-// Локальные копии для редактирования
-const editStatus = ref(null)
-const editPriority = ref(null)
-const editCategory = ref(null)
-const editAssigneeId = ref(null)
-
-const ticketId = computed(() => route.params.id)
-const isClient = computed(() => authStore.user?.role === 'CLIENT')
-const isAdmin = computed(() => authStore.user?.role === 'ADMIN')
-const isOperator = computed(() => authStore.user?.role === 'OPERATOR')
-const canEdit = computed(() => {
-  const userRole = authStore.user?.role
-  return userRole === 'ADMIN' || userRole === 'OPERATOR'
-})
-
-const TICKET_STATUSES = ['NEW', 'IN_PROGRESS', 'RESOLVED']
-const TICKET_PRIORITIES = ['LOW', 'MEDIUM', 'HIGH']
-
-const getStatusLabel = (status) => {
-  const labels = {
-    NEW: 'Новая',
-    IN_PROGRESS: 'В работе',
-    RESOLVED: 'Решена',
-    CLOSED: 'Закрыта'
-  }
-  return labels[status] || status
-}
-
-const getPriorityLabel = (priority) => {
-  const labels = {
-    LOW: 'Низкий',
-    MEDIUM: 'Средний',
-    HIGH: 'Высокий'
-  }
-  return labels[priority] || priority
-}
-
-const loadTicket = async () => {
-  loading.value = true
-  notFound.value = false
-
-  try {
-    ticket.value = await getTicketByIdApi(ticketId.value)
-    await loadCategories()
-  } catch (error) {
-    if (error.response?.status === 404) {
-      notFound.value = true
-      return
-    }
-    throw error
-  } finally {
-    loading.value = false
-  }
-}
-
-const loadCategories = async () => {
-  try {
-    categories.value = await getCategoriesForTicketApi()
-  } catch (error) {
-    console.error('Failed to load categories:', error)
-  }
-}
-
-const enterEditMode = () => {
-  editStatus.value = ticket.value.status
-  editPriority.value = ticket.value.priority
-  editCategory.value = ticket.value.categoryId
-  editAssigneeId.value = ticket.value.assigneeId
-  editMode.value = true
-}
-
-const cancelEdit = () => {
-  editMode.value = false
-  editStatus.value = null
-  editPriority.value = null
-  editCategory.value = null
-  editAssigneeId.value = null
-}
-
-const saveChanges = async () => {
-  updating.value = true
-
-  try {
-    // Обновляем статус если он изменился
-    if (editStatus.value !== ticket.value.status) {
-      await updateTicketStatusApi(ticketId.value, editStatus.value)
-    }
-
-    // Обновляем классификацию если изменилось
-    if (isAdmin && (editCategory.value !== ticket.value.categoryId || editPriority.value !== ticket.value.priority)) {
-      await updateTicketClassificationApi(ticketId.value, editCategory.value, editPriority.value)
-    }
-
-    // Обновляем ответственного если изменился
-    if (isAdmin && editAssigneeId.value !== ticket.value.assigneeId) {
-      await assignTicketApi(ticketId.value, editAssigneeId.value)
-    }
-
-    // Перезагружаем данные заявки
-    await loadTicket()
-    editMode.value = false
-    ElMessage.success('Заявка успешно обновлена')
-  } catch (error) {
-    const errorMessage = error.response?.data?.message || 'Ошибка при обновлении заявки'
-    ElMessage.error(errorMessage)
-  } finally {
-    updating.value = false
-  }
-}
-
-const closeTicket = async () => {
-  ElMessageBox.confirm('Вы уверены, что хотите закрыть эту заявку?', 'Подтверждение', {
-    confirmButtonText: 'Закрыть',
-    cancelButtonText: 'Отмена',
-    type: 'warning'
-  })
-    .then(async () => {
-      updating.value = true
-      try {
-        await closeTicketApi(ticketId.value)
-        await loadTicket()
-        ElMessage.success('Заявка успешно закрыта')
-      } catch (error) {
-        const errorMessage = error.response?.data?.message || 'Ошибка при закрытии заявки'
-        ElMessage.error(errorMessage)
-      } finally {
-        updating.value = false
-      }
-    })
-    .catch(() => {
-      // User cancelled the action
-    })
-}
-
-const formatDate = (value) => {
-  if (!value) {
-    return '—'
-  }
-
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) {
-    return value
-  }
-
-  return date.toLocaleString('ru-RU')
-}
+const {
+  loading,
+  updating,
+  ticket,
+  categories,
+  notFound,
+  editMode,
+  editStatus,
+  editPriority,
+  editCategory,
+  editAssigneeId,
+  ticketId,
+  isAdmin,
+  canEdit,
+  loadTicket,
+  enterEditMode,
+  cancelEdit,
+  saveChanges,
+  closeTicket,
+} = useTicketDetails({ route, authStore })
 
 onMounted(loadTicket)
 </script>
@@ -212,10 +72,10 @@ onMounted(loadTicket)
             ticket.authorName || `ID: ${ticket.authorId || '—'}`
           }}</el-descriptions-item>
           <el-descriptions-item label="Создана">{{
-            formatDate(ticket.createdAt)
+            formatDateTime(ticket.createdAt)
           }}</el-descriptions-item>
           <el-descriptions-item label="Обновлена">{{
-            formatDate(ticket.updatedAt)
+            formatDateTime(ticket.updatedAt)
           }}</el-descriptions-item>
         </el-descriptions>
 
@@ -304,7 +164,7 @@ onMounted(loadTicket)
 
             <!-- Срок (просмотр только) -->
             <el-form-item label="Срок">
-              <span>{{ formatDate(ticket.dueAt) }}</span>
+              <span>{{ formatDateTime(ticket.dueAt) }}</span>
             </el-form-item>
           </el-form>
         </div>
@@ -318,7 +178,7 @@ onMounted(loadTicket)
             <el-descriptions-item label="Категория">{{
               ticket.categoryName || '—'
             }}</el-descriptions-item>
-            <el-descriptions-item label="Срок">{{ formatDate(ticket.dueAt) }}</el-descriptions-item>
+            <el-descriptions-item label="Срок">{{ formatDateTime(ticket.dueAt) }}</el-descriptions-item>
           </el-descriptions>
         </div>
       </div>

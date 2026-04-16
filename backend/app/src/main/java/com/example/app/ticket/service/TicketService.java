@@ -23,6 +23,7 @@ import com.example.app.user.entity.User;
 import com.example.app.user.entity.UserRole;
 import com.example.app.user.exception.UserNotFoundException;
 import com.example.app.user.repository.UserRepository;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -105,6 +106,7 @@ public class TicketService {
 	@Transactional
 	public TicketResponse update(Long id, UpdateTicketRequest request) {
 		Ticket ticket = findTicketById(id);
+		ensureCanModifyTicket(ticket);
 		ensureTicketIsNotClosed(ticket);
 
 		String title = ticketMapper.normalizeText(request.title());
@@ -172,6 +174,7 @@ public class TicketService {
 	public TicketResponse updateStatus(Long id, UpdateTicketStatusRequest request) {
 		User actor = getCurrentUserEntity();
 		Ticket ticket = findTicketById(id);
+		ensureCanModifyTicket(ticket);
 		ensureTicketIsNotClosed(ticket);
 
 		if (request.status() == TicketStatus.CLOSED) {
@@ -195,6 +198,7 @@ public class TicketService {
 	public TicketResponse close(Long id) {
 		User actor = getCurrentUserEntity();
 		Ticket ticket = findTicketById(id);
+		ensureCanModifyTicket(ticket);
 
 		if (ticket.getStatus() == TicketStatus.CLOSED) {
 			throw new TicketBadRequestException("Ticket is already closed");
@@ -233,6 +237,22 @@ public class TicketService {
 	private void ensureTicketIsNotClosed(Ticket ticket) {
 		if (ticket.getStatus() == TicketStatus.CLOSED) {
 			throw new TicketBadRequestException("Closed ticket cannot be changed");
+		}
+	}
+
+	private void ensureCanModifyTicket(Ticket ticket) {
+		if (currentUserService.hasRole(UserRole.ADMIN)) {
+			return;
+		}
+
+		if (!currentUserService.hasRole(UserRole.OPERATOR)) {
+			throw new AccessDeniedException("Not enough permissions to modify ticket");
+		}
+
+		Long currentUserId = currentUserService.requireCurrentUserId();
+		Long assigneeId = ticket.getAssignee() != null ? ticket.getAssignee().getId() : null;
+		if (assigneeId == null || !assigneeId.equals(currentUserId)) {
+			throw new AccessDeniedException("Operator can modify only assigned tickets");
 		}
 	}
 

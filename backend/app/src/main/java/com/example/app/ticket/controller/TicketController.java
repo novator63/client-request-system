@@ -56,7 +56,7 @@ public class TicketController {
 	}
 
 	@PatchMapping("/{id}")
-	@PreAuthorize("hasAnyRole('ADMIN','OPERATOR')")
+	@PreAuthorize("@ticketAccess.canModifyTicket(#id)")
 	public TicketResponse update(
 		@PathVariable @Positive(message = "Ticket id must be positive") Long id,
 		@Valid @RequestBody UpdateTicketRequest request
@@ -83,7 +83,7 @@ public class TicketController {
 	}
 
 	@PatchMapping("/{id}/status")
-	@PreAuthorize("hasAnyRole('ADMIN','OPERATOR')")
+	@PreAuthorize("@ticketAccess.canModifyTicket(#id)")
 	public TicketResponse updateStatus(
 		@PathVariable @Positive(message = "Ticket id must be positive") Long id,
 		@Valid @RequestBody UpdateTicketStatusRequest request
@@ -92,7 +92,7 @@ public class TicketController {
 	}
 
 	@PostMapping("/{id}/close")
-	@PreAuthorize("hasAnyRole('ADMIN','OPERATOR')")
+	@PreAuthorize("@ticketAccess.canModifyTicket(#id)")
 	public TicketResponse close(@PathVariable @Positive(message = "Ticket id must be positive") Long id) {
 		return ticketService.close(id);
 	}

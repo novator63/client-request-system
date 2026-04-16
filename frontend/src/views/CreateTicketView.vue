@@ -1,5 +1,5 @@
 <script setup>
-import { reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useRouter } from 'vue-router'
 import { createTicketApi, getCategoriesForTicketApi } from '../api/tickets.api'
@@ -9,14 +9,7 @@ const router = useRouter()
 const loading = ref(false)
 const categoriesLoading = ref(false)
 const categories = ref([])
-
-const fallbackCategories = [
-  { id: 1, name: 'Техническая проблема' },
-  { id: 2, name: 'Оплата' },
-  { id: 3, name: 'Доставка' },
-  { id: 4, name: 'Возврат' },
-  { id: 5, name: 'Другое' },
-]
+const categoriesError = ref('')
 
 const formRef = ref(null)
 
@@ -36,6 +29,9 @@ const form = reactive({
   customerPhone: '',
   category: '',
 })
+
+const hasCategories = computed(() => categories.value.length > 0)
+const canSubmit = computed(() => !loading.value && !categoriesLoading.value && hasCategories.value)
 
 const emailLatinValidator = (_, value, callback) => {
   const normalized = String(value || '').trim()
@@ -138,6 +134,8 @@ const extractErrorMessage = (error) => {
 
 const loadCategories = async () => {
   categoriesLoading.value = true
+  categoriesError.value = ''
+  categories.value = []
 
   try {
     const response = await getCategoriesForTicketApi()
@@ -147,16 +145,20 @@ const loadCategories = async () => {
       return
     }
 
-    categories.value = fallbackCategories
+    categoriesError.value = 'Список категорий пуст. Обратитесь к администратору.'
   } catch {
-    categories.value = fallbackCategories
-    ElMessage.warning('Категории загружены в тестовом режиме')
+    categoriesError.value = 'Не удалось загрузить категории. Попробуйте обновить страницу.'
   } finally {
     categoriesLoading.value = false
   }
 }
 
 const submit = async () => {
+  if (!hasCategories.value) {
+    ElMessage.error(categoriesError.value || 'Невозможно создать заявку без доступных категорий')
+    return
+  }
+
   try {
     await formRef.value.validate()
   } catch {
@@ -190,7 +192,7 @@ const submit = async () => {
   }
 }
 
-loadCategories()
+onMounted(loadCategories)
 </script>
 
 <template>
@@ -207,6 +209,14 @@ loadCategories()
         label-position="top"
         @submit.prevent="submit"
       >
+        <el-alert
+          v-if="categoriesError"
+          :title="categoriesError"
+          type="error"
+          show-icon
+          class="create-ticket-page__error"
+        />
+
         <el-form-item label="Тема" prop="subject">
           <el-input
             v-model="form.subject"
@@ -259,8 +269,9 @@ loadCategories()
         <el-form-item label="Категория" prop="category">
           <el-select
             v-model="form.category"
-            placeholder="Выберите категорию"
+            :placeholder="hasCategories ? 'Выберите категорию' : 'Категории недоступны'"
             :loading="categoriesLoading"
+            :disabled="!hasCategories"
           >
             <el-option
               v-for="category in categories"
@@ -273,7 +284,9 @@ loadCategories()
 
         <div class="create-ticket-page__actions">
           <el-button @click="router.push('/tickets')">Отмена</el-button>
-          <el-button type="primary" :loading="loading" @click="submit">Создать заявку</el-button>
+          <el-button type="primary" :loading="loading" :disabled="!canSubmit" @click="submit">
+            Создать заявку
+          </el-button>
         </div>
       </el-form>
     </el-card>
@@ -292,6 +305,10 @@ loadCategories()
 
 .create-ticket-page :deep(.el-select) {
   width: 100%;
+}
+
+.create-ticket-page__error {
+  margin-bottom: 16px;
 }
 
 .create-ticket-page__actions {
