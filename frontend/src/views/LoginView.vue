@@ -104,8 +104,8 @@ const submit = async () => {
   min-height: 100vh;
   display: grid;
   place-items: center;
-  padding: 16px;
-  background: linear-gradient(120deg, #f3f7ff, #e9f0ff);
+  padding: 20px;
+  background: linear-gradient(135deg, #f3f7ff 0%, #e9f0ff 100%);
 }
 
 .login-card {
@@ -115,14 +115,24 @@ const submit = async () => {
 
 .title {
   margin: 0;
-  font-size: 24px;
+  font-size: 28px;
+  font-weight: 600;
+  text-align: center;
 }
 
 .error-alert {
-  margin-bottom: 16px;
+  margin-bottom: 20px;
 }
 
 .submit-btn {
   width: 100%;
+}
+
+:deep(.el-form-item__label) {
+  font-weight: 500;
+}
+
+:deep(.el-input__wrapper) {
+  padding: 8px 12px;
 }
 </style>

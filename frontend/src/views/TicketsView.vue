@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useTicketsList } from '../composables/useTicketsList'
 import { STATUS_OPTIONS, PRIORITY_OPTIONS } from '../constants/ticket.constants'
-import { formatDateTime, getAssigneeLabel, getPriorityLabel, getStatusLabel } from '../utils/ticketFormatters'
+import { formatDateTime, getAssigneeLabel, getPriorityLabel, getPriorityTagType, getStatusLabel, getStatusTagType } from '../utils/ticketFormatters'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -86,16 +86,28 @@ onMounted(loadTickets)
         />
       </div>
 
-      <el-empty v-if="!loading && paginatedTickets.length === 0" description="Нет заявок для отображения" />
+      <el-empty 
+        v-if="!loading && paginatedTickets.length === 0" 
+        description="Нет заявок" 
+        image-size="80"
+      />
 
       <el-table v-else :data="paginatedTickets" v-loading="loading" stripe @row-click="openTicket">
-        <el-table-column prop="id" label="Номер" min-width="90" />
+        <el-table-column prop="id" label="№" min-width="70" />
         <el-table-column prop="title" label="Тема" min-width="220" show-overflow-tooltip />
-        <el-table-column label="Статус" min-width="130">
-          <template #default="scope">{{ getStatusLabel(scope.row.status) }}</template>
+        <el-table-column label="Статус" min-width="110">
+          <template #default="scope">
+            <el-tag :type="getStatusTagType(scope.row.status)" size="small">
+              {{ getStatusLabel(scope.row.status) }}
+            </el-tag>
+          </template>
         </el-table-column>
-        <el-table-column v-if="!isClient" label="Приоритет" min-width="130">
-          <template #default="scope">{{ getPriorityLabel(scope.row.priority) }}</template>
+        <el-table-column v-if="!isClient" label="Приоритет" min-width="110">
+          <template #default="scope">
+            <el-tag :type="getPriorityTagType(scope.row.priority)" size="small">
+              {{ getPriorityLabel(scope.row.priority) }}
+            </el-tag>
+          </template>
         </el-table-column>
         <el-table-column prop="categoryName" label="Категория" min-width="160">
           <template #default="scope">{{ scope.row.categoryName || '—' }}</template>
@@ -106,9 +118,9 @@ onMounted(loadTickets)
         <el-table-column label="Срок" min-width="170">
           <template #default="scope">{{ formatDateTime(scope.row.dueAt) }}</template>
         </el-table-column>
-        <el-table-column label="" width="120" fixed="right">
+        <el-table-column label="" width="100" fixed="right" align="center">
           <template #default="scope">
-            <el-button link type="primary" @click.stop="openTicket(scope.row)">Открыть</el-button>
+            <el-button link type="primary" size="small" @click.stop="openTicket(scope.row)">Открыть</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -132,23 +144,25 @@ onMounted(loadTickets)
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 16px;
 }
 
 .tickets-page__header h1 {
   margin: 0;
   font-size: 24px;
+  font-weight: 600;
+  flex: 1;
 }
 
 .tickets-page__filters {
-  margin-bottom: 16px;
+  margin-bottom: 20px;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
 }
 
 .tickets-page__pagination {
-  margin-top: 16px;
+  margin-top: 20px;
   display: flex;
   justify-content: flex-end;
 }

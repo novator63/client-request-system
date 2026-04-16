@@ -6,7 +6,7 @@ import { useTicketDetails } from '../composables/useTicketDetails'
 import { useComments } from '../composables/useComments'
 import { useTicketHistory } from '../composables/useTicketHistory'
 import { isClosedTicketStatus, TICKET_PRIORITIES, TICKET_STATUSES } from '../constants/ticket.constants'
-import { formatDateTime, getPriorityLabel, getStatusLabel } from '../utils/ticketFormatters'
+import { formatDateTime, getPriorityLabel, getPriorityTagType, getStatusLabel, getStatusTagType } from '../utils/ticketFormatters'
 
 const route = useRoute()
 const router = useRouter()
@@ -188,7 +188,9 @@ onBeforeUnmount(() => {
                 </el-select>
               </template>
               <template v-else>
-                <span>{{ getStatusLabel(ticket.status) }}</span>
+                <el-tag :type="getStatusTagType(ticket.status)" size="small">
+                  {{ getStatusLabel(ticket.status) }}
+                </el-tag>
               </template>
             </el-form-item>
 
@@ -206,7 +208,10 @@ onBeforeUnmount(() => {
                   </el-select>
                 </template>
                 <template v-else>
-                  <span>{{ getPriorityLabel(ticket.priority) || '—' }}</span>
+                  <el-tag v-if="ticket.priority" :type="getPriorityTagType(ticket.priority)" size="small">
+                    {{ getPriorityLabel(ticket.priority) }}
+                  </el-tag>
+                  <span v-else>—</span>
                 </template>
               </el-form-item>
 
@@ -251,9 +256,11 @@ onBeforeUnmount(() => {
         <!-- Для CLIENT: просто показываем статус без редактирования -->
         <div v-else class="status-section">
           <el-descriptions :column="1" border>
-            <el-descriptions-item label="Статус">{{
-              getStatusLabel(ticket.status)
-            }}</el-descriptions-item>
+            <el-descriptions-item label="Статус">
+              <el-tag :type="getStatusTagType(ticket.status)" size="small">
+                {{ getStatusLabel(ticket.status) }}
+              </el-tag>
+            </el-descriptions-item>
             <el-descriptions-item label="Категория">{{
               ticket.categoryName || '—'
             }}</el-descriptions-item>
@@ -386,30 +393,34 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 16px;
+  flex-wrap: wrap;
 }
 
 .details-header h1 {
   margin: 0;
-  font-size: 24px;
+  font-size: 28px;
+  font-weight: 600;
   flex: 1;
+  min-width: 250px;
 }
 
 .header-actions {
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .ticket-details {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 28px;
 }
 
 .editable-section {
   border: 1px solid var(--el-border-color);
-  border-radius: 4px;
-  padding: 16px;
+  border-radius: 6px;
+  padding: 20px;
   background-color: var(--el-fill-color-light);
 }
 
@@ -417,33 +428,37 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .section-header h3 {
   margin: 0;
   font-size: 16px;
+  font-weight: 600;
   color: var(--el-text-color-primary);
   flex: 1;
+  min-width: 150px;
 }
 
 .status-section {
-  margin-top: 16px;
+  margin-top: 12px;
 }
 
 .comments-section {
   border: 1px solid var(--el-border-color);
   border-radius: 6px;
-  padding: 16px;
+  padding: 20px;
   background-color: var(--el-fill-color-light);
 }
 
 .history-section {
   border: 1px solid var(--el-border-color-lighter);
   border-radius: 6px;
-  padding: 16px;
+  padding: 20px;
   background: var(--el-bg-color);
-  margin-bottom: 16px;
+  margin-bottom: 20px;
 }
 
 .history-section__header {
@@ -452,11 +467,13 @@ onBeforeUnmount(() => {
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 16px;
+  flex-wrap: wrap;
 }
 
 .history-section__header h3 {
   margin: 0;
   font-size: 16px;
+  font-weight: 600;
   color: var(--el-text-color-primary);
 }
 
@@ -471,7 +488,7 @@ onBeforeUnmount(() => {
 }
 
 .history-list {
-  min-height: 72px;
+  min-height: 80px;
 }
 
 .history-list__items {
@@ -484,6 +501,11 @@ onBeforeUnmount(() => {
   border-radius: 6px;
   padding: 14px 16px;
   background: var(--el-fill-color-extra-light);
+  transition: background-color 0.2s;
+}
+
+.history-item:hover {
+  background-color: var(--el-fill-color-light);
 }
 
 .history-item__top-row {
@@ -491,12 +513,13 @@ onBeforeUnmount(() => {
   align-items: baseline;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
 
 .history-item__action {
   font-weight: 600;
   color: var(--el-text-color-primary);
+  font-size: 14px;
 }
 
 .history-item__date {
@@ -508,6 +531,7 @@ onBeforeUnmount(() => {
 .history-item__meta {
   font-size: 13px;
   color: var(--el-text-color-regular);
+  margin-bottom: 8px;
 }
 
 .history-item__meta span {
@@ -521,6 +545,7 @@ onBeforeUnmount(() => {
   word-break: break-word;
   color: var(--el-text-color-regular);
   line-height: 1.5;
+  font-size: 13px;
 }
 
 .comments-section__header {
@@ -529,11 +554,13 @@ onBeforeUnmount(() => {
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 16px;
+  flex-wrap: wrap;
 }
 
 .comments-section__header h3 {
   margin: 0;
   font-size: 16px;
+  font-weight: 600;
   color: var(--el-text-color-primary);
 }
 
@@ -548,12 +575,13 @@ onBeforeUnmount(() => {
 }
 
 .comments-list {
-  min-height: 72px;
+  min-height: 80px;
 }
 
 .comments-list__items {
   display: grid;
   gap: 12px;
+  margin-bottom: 20px;
 }
 
 .comment-card {
@@ -561,6 +589,11 @@ onBeforeUnmount(() => {
   border-radius: 6px;
   padding: 14px 16px;
   background: var(--el-bg-color);
+  transition: box-shadow 0.2s;
+}
+
+.comment-card:hover {
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
 }
 
 .comment-card__header {
@@ -574,6 +607,7 @@ onBeforeUnmount(() => {
 .comment-card__author {
   font-weight: 600;
   color: var(--el-text-color-primary);
+  font-size: 14px;
 }
 
 .comment-card__date {
@@ -588,14 +622,19 @@ onBeforeUnmount(() => {
   word-break: break-word;
   color: var(--el-text-color-primary);
   line-height: 1.6;
+  font-size: 13px;
 }
 
 .comment-form {
-  margin-top: 16px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--el-border-color-lighter);
 }
 
 .comment-form__actions {
   display: flex;
   justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
 }
 </style>

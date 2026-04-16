@@ -1,8 +1,16 @@
-import { PRIORITY_LABELS, STATUS_LABELS } from '../constants/ticket.constants'
+import { PRIORITY_LABELS, STATUS_LABELS, STATUS_COLORS, STATUS_TAG_TYPE, PRIORITY_COLORS, PRIORITY_TAG_TYPE } from '../constants/ticket.constants'
 
 export const getStatusLabel = (status) => STATUS_LABELS[status] || status || '—'
 
+export const getStatusColor = (status) => STATUS_COLORS[status] || '#606266'
+
+export const getStatusTagType = (status) => STATUS_TAG_TYPE[status] || 'info'
+
 export const getPriorityLabel = (priority) => PRIORITY_LABELS[priority] || priority || '—'
+
+export const getPriorityColor = (priority) => PRIORITY_COLORS[priority] || '#909399'
+
+export const getPriorityTagType = (priority) => PRIORITY_TAG_TYPE[priority] || 'info'
 
 export const formatDateTime = (value) => {
   if (!value) {

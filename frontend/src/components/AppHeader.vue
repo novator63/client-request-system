@@ -25,12 +25,12 @@ defineEmits(['logout'])
 
 <style scoped>
 .app-header {
-  height: 72px;
+  min-height: 72px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  padding: 0 20px;
+  gap: 20px;
+  padding: 0 24px;
   background: linear-gradient(110deg, #f6f9ff 10%, #eef3ff 100%);
   border-bottom: 1px solid #dce5f5;
 }
@@ -39,34 +39,39 @@ defineEmits(['logout'])
   font-size: 18px;
   font-weight: 700;
   color: #1f2937;
+  letter-spacing: -0.5px;
 }
 
 .app-header__user-block {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
 }
 
 .app-header__user-info {
   text-align: right;
+  min-width: 140px;
 }
 
 .app-header__name {
   font-weight: 600;
   color: #111827;
+  font-size: 14px;
 }
 
 .app-header__role {
-  font-size: 13px;
-  color: #4b5563;
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 2px;
 }
 
 @media (max-width: 768px) {
   .app-header {
-    height: auto;
-    padding: 12px;
+    min-height: auto;
+    padding: 14px 16px;
     flex-direction: column;
     align-items: flex-start;
+    gap: 12px;
   }
 
   .app-header__user-block {

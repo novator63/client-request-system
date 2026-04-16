@@ -45,3 +45,35 @@ export const HISTORY_ACTION_LABELS = {
   CLOSED: 'Закрыта',
   COMMENT_ADDED: 'Добавлен комментарий',
 }
+
+/**
+ * Status colors for el-tag component
+ */
+export const STATUS_COLORS = {
+  NEW: '#409eff',
+  IN_PROGRESS: '#e6a23c',
+  RESOLVED: '#67c23a',
+  CLOSED: '#909399',
+}
+
+export const STATUS_TAG_TYPE = {
+  NEW: 'info',
+  IN_PROGRESS: 'warning',
+  RESOLVED: 'success',
+  CLOSED: 'info',
+}
+
+/**
+ * Priority colors for el-tag component
+ */
+export const PRIORITY_COLORS = {
+  LOW: '#909399',
+  MEDIUM: '#e6a23c',
+  HIGH: '#f56c6c',
+}
+
+export const PRIORITY_TAG_TYPE = {
+  LOW: 'info',
+  MEDIUM: 'warning',
+  HIGH: 'danger',
+}

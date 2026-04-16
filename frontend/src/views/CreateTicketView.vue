@@ -262,6 +262,7 @@ onMounted(loadCategories)
 .create-ticket-page__title {
   margin: 0;
   font-size: 24px;
+  font-weight: 600;
 }
 
 .create-ticket-page :deep(.el-select) {
@@ -269,12 +270,15 @@ onMounted(loadCategories)
 }
 
 .create-ticket-page__error {
-  margin-bottom: 16px;
+  margin-bottom: 20px;
 }
 
 .create-ticket-page__actions {
   display: flex;
   justify-content: flex-end;
-  gap: 10px;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--el-border-color-lighter);
 }
 </style>

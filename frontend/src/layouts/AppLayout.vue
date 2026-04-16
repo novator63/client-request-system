@@ -41,7 +41,7 @@ const handleLogout = async () => {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: #f3f4f6;
+  background: #f5f7fa;
 }
 
 .app-shell__body {
@@ -56,7 +56,8 @@ const handleLogout = async () => {
 }
 
 .app-shell__content {
-  padding: 20px;
+  padding: 24px;
+  overflow: auto;
 }
 
 @media (max-width: 992px) {
@@ -66,6 +67,16 @@ const handleLogout = async () => {
 
   .app-shell__sidebar {
     min-height: auto;
+  }
+
+  .app-shell__content {
+    padding: 20px;
+  }
+}
+
+@media (max-width: 600px) {
+  .app-shell__content {
+    padding: 16px;
   }
 }
 </style>
