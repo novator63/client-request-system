@@ -1,24 +1,8 @@
-import http from './http'
-
-const normalizeCommentsResponse = (payload) => {
-  if (Array.isArray(payload)) {
-    return payload
-  }
-
-  if (Array.isArray(payload?.content)) {
-    return payload.content
-  }
-
-  if (Array.isArray(payload?.items)) {
-    return payload.items
-  }
-
-  return []
-}
+import http, { normalizeListResponse } from './http'
 
 export const getCommentsByTicketIdApi = async (ticketId) => {
   const { data } = await http.get(`/comments/tickets/${ticketId}`)
-  return normalizeCommentsResponse(data)
+  return normalizeListResponse(data)
 }
 
 export const createCommentByTicketIdApi = async (ticketId, payload) => {

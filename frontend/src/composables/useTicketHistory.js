@@ -1,16 +1,7 @@
 import { computed, ref, unref } from 'vue'
 import { getTicketHistoryApi } from '../api/history.api'
-import { USER_ROLES } from '../constants/ticket.constants'
+import { HISTORY_ACTION_LABELS, USER_ROLES } from '../constants/ticket.constants'
 import { parseApiError } from '../utils/errorHandler'
-
-const HISTORY_ACTION_LABELS = {
-  TICKET_CREATED: 'Создана',
-  ASSIGNED: 'Назначена',
-  STATUS_CHANGED: 'Изменен статус',
-  CATEGORY_CHANGED: 'Изменена категория',
-  CLOSED: 'Закрыта',
-  COMMENT_ADDED: 'Добавлен комментарий',
-}
 
 const normalizeHistoryEntry = (entry) => {
   const actionType = entry?.actionType || ''

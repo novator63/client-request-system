@@ -6,6 +6,30 @@ const http = axios.create({
   withCredentials: true,
 })
 
+/**
+ * Normalize list response from API to array
+ * Handles various response formats: direct array, paginated, or wrapped
+ */
+export const normalizeListResponse = (payload) => {
+  if (Array.isArray(payload)) {
+    return payload
+  }
+
+  if (Array.isArray(payload?.content)) {
+    return payload.content
+  }
+
+  if (Array.isArray(payload?.items)) {
+    return payload.items
+  }
+
+  if (Array.isArray(payload?.entries)) {
+    return payload.entries
+  }
+
+  return []
+}
+
 // In-memory token storage
 let authToken = null
 let isRefreshing = false

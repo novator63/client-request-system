@@ -5,7 +5,7 @@ import {
   getReportByStatusApi,
   getReportSummaryApi,
 } from '../api/reports.api'
-import { getStatusLabel } from '../utils/ticketFormatters'
+import { getStatusLabel, normalizeSummary, normalizeRows } from '../utils/ticketFormatters'
 import { parseApiError } from '../utils/errorHandler'
 
 const loading = ref(false)
@@ -26,22 +26,6 @@ const summaryCards = computed(() => [
   { key: 'closed', title: 'Закрыто', value: summary.value.closed },
   { key: 'overdue', title: 'Просрочено', value: summary.value.overdue },
 ])
-
-const normalizeCount = (value) => (Number.isFinite(Number(value)) ? Number(value) : 0)
-
-const normalizeSummary = (payload) => ({
-  total: normalizeCount(payload?.total),
-  open: normalizeCount(payload?.open),
-  inProgress: normalizeCount(payload?.inProgress),
-  closed: normalizeCount(payload?.closed),
-  overdue: normalizeCount(payload?.overdue),
-})
-
-const normalizeRows = (rows) =>
-  rows.map((row) => ({
-    ...row,
-    count: normalizeCount(row?.count),
-  }))
 
 const loadReport = async () => {
   loading.value = true

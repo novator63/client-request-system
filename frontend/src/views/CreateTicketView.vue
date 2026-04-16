@@ -3,6 +3,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { createTicketApi, getCategoriesForTicketApi } from '../api/tickets.api'
 import { notifyApiError, notifySuccess, parseApiError } from '../utils/errorHandler'
+import { emailLatinValidator, phoneValidator, normalizePhoneInput, formatPhoneWithPrefix, FIELD_LIMITS } from '../utils/validators'
 
 const router = useRouter()
 
@@ -12,14 +13,6 @@ const categories = ref([])
 const categoriesError = ref('')
 
 const formRef = ref(null)
-
-const FIELD_LIMITS = {
-  subject: 255,
-  description: 500,
-  customerName: 120,
-  customerEmail: 254,
-  customerPhone: 10,
-}
 
 const form = reactive({
   subject: '',
@@ -33,51 +26,11 @@ const form = reactive({
 const hasCategories = computed(() => categories.value.length > 0)
 const canSubmit = computed(() => !loading.value && !categoriesLoading.value && hasCategories.value)
 
-const emailLatinValidator = (_, value, callback) => {
-  const normalized = String(value || '').trim()
-  const latinEmailPattern = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/
-
-  if (!normalized) {
-    callback(new Error('Введите email клиента'))
-    return
-  }
-
-  if (!latinEmailPattern.test(normalized)) {
-    callback(new Error('Email должен быть на латинице и в корректном формате'))
-    return
-  }
-
-  if (normalized.length > FIELD_LIMITS.customerEmail) {
-    callback(new Error(`Email не должен превышать ${FIELD_LIMITS.customerEmail} символа`))
-    return
-  }
-
-  callback()
+const onPhoneInput = (value) => {
+  form.customerPhone = normalizePhoneInput(value)
 }
 
-const phoneValidator = (_, value, callback) => {
-  const digits = String(value || '').replace(/\D/g, '')
-
-  if (!digits) {
-    callback(new Error('Введите телефон'))
-    return
-  }
-
-  if (digits.length !== 10) {
-    callback(new Error('Введите 10 цифр номера после кода +7'))
-    return
-  }
-
-  callback()
-}
-
-const normalizePhoneInput = (value) => {
-  form.customerPhone = String(value || '')
-    .replace(/\D/g, '')
-    .slice(0, 10)
-}
-
-const formattedPhone = () => `+7${form.customerPhone}`
+const formattedPhone = () => formatPhoneWithPrefix(form.customerPhone)
 
 const rules = {
   subject: [
@@ -256,7 +209,7 @@ onMounted(loadCategories)
             :model-value="form.customerPhone"
             :maxlength="FIELD_LIMITS.customerPhone"
             placeholder="900-200-30-40"
-            @input="normalizePhoneInput"
+            @input="onPhoneInput"
           >
             <template #prepend>+7</template>
           </el-input>

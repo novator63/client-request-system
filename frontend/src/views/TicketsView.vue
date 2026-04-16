@@ -3,7 +3,7 @@ import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useTicketsList } from '../composables/useTicketsList'
-import { PRIORITY_OPTIONS, STATUS_OPTIONS } from '../constants/ticket.constants'
+import { STATUS_OPTIONS } from '../constants/ticket.constants'
 import { formatDateTime, getAssigneeLabel, getPriorityLabel, getStatusLabel } from '../utils/ticketFormatters'
 
 const router = useRouter()

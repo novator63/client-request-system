@@ -1,40 +1,8 @@
-import http from './http'
-
-const normalizeTicketsResponse = (payload) => {
-  if (Array.isArray(payload)) {
-    return payload
-  }
-
-  if (Array.isArray(payload?.content)) {
-    return payload.content
-  }
-
-  if (Array.isArray(payload?.items)) {
-    return payload.items
-  }
-
-  return []
-}
-
-const normalizeCategoriesResponse = (payload) => {
-  if (Array.isArray(payload)) {
-    return payload
-  }
-
-  if (Array.isArray(payload?.content)) {
-    return payload.content
-  }
-
-  if (Array.isArray(payload?.items)) {
-    return payload.items
-  }
-
-  return []
-}
+import http, { normalizeListResponse } from './http'
 
 export const getTicketsApi = async (params = {}) => {
   const { data } = await http.get('/tickets', { params })
-  return normalizeTicketsResponse(data)
+  return normalizeListResponse(data)
 }
 
 export const getTicketByIdApi = async (id) => {
@@ -49,7 +17,7 @@ export const createTicketApi = async (payload) => {
 
 export const getCategoriesForTicketApi = async () => {
   const { data } = await http.get('/categories')
-  return normalizeCategoriesResponse(data)
+  return normalizeListResponse(data)
 }
 
 export const updateTicketStatusApi = async (id, status) => {

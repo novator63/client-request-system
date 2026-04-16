@@ -1,20 +1,4 @@
-import http from './http'
-
-const normalizeListResponse = (payload) => {
-  if (Array.isArray(payload)) {
-    return payload
-  }
-
-  if (Array.isArray(payload?.content)) {
-    return payload.content
-  }
-
-  if (Array.isArray(payload?.items)) {
-    return payload.items
-  }
-
-  return []
-}
+import http, { normalizeListResponse } from './http'
 
 export const getReportSummaryApi = async () => {
   const { data } = await http.get('/reports/summary')

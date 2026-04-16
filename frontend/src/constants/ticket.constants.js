@@ -36,3 +36,12 @@ export const PRIORITY_LABELS = {
   MEDIUM: 'Средний',
   HIGH: 'Высокий',
 }
+
+export const HISTORY_ACTION_LABELS = {
+  TICKET_CREATED: 'Создана',
+  ASSIGNED: 'Назначена',
+  STATUS_CHANGED: 'Изменен статус',
+  CATEGORY_CHANGED: 'Изменена категория',
+  CLOSED: 'Закрыта',
+  COMMENT_ADDED: 'Добавлен комментарий',
+}
