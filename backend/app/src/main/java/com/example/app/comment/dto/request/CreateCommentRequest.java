@@ -5,7 +5,7 @@ import jakarta.validation.constraints.Size;
 
 public record CreateCommentRequest(
 	@NotBlank(message = "Comment text is required")
-	@Size(max = 5000, message = "Comment text must be at most 5000 characters")
+	@Size(max = 500, message = "Comment text must be at most 500 characters")
 	String content
 ) {
 }

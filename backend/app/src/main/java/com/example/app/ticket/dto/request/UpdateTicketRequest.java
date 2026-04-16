@@ -6,7 +6,7 @@ public record UpdateTicketRequest(
 	@Size(max = 255, message = "Ticket title must be at most 255 characters")
 	String title,
 
-	@Size(max = 5000, message = "Ticket description must be at most 5000 characters")
+	@Size(max = 500, message = "Ticket description must be at most 500 characters")
 	String description
 ) {
 }

@@ -2,7 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import AppLayout from '../layouts/AppLayout.vue'
 import CategoriesView from '../views/CategoriesView.vue'
-import CreateRequestView from '../views/CreateRequestView.vue'
+import CreateTicketView from '../views/CreateTicketView.vue'
 import LoginView from '../views/LoginView.vue'
 import NotFoundView from '../views/NotFoundView.vue'
 import RequestDetailsView from '../views/RequestDetailsView.vue'
@@ -35,7 +35,7 @@ const router = createRouter({
         {
           path: 'tickets/create',
           name: 'create-ticket',
-          component: CreateRequestView,
+          component: CreateTicketView,
         },
         {
           path: 'tickets/:id',

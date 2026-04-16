@@ -12,7 +12,7 @@ public record CreateTicketRequest(
 	String title,
 
 	@NotBlank(message = "Ticket description is required")
-	@Size(max = 5000, message = "Ticket description must be at most 5000 characters")
+	@Size(max = 500, message = "Ticket description must be at most 500 characters")
 	String description,
 
 	@NotNull(message = "Ticket priority is required")
