@@ -3,6 +3,7 @@ package com.example.app.ticket.repository;
 import com.example.app.ticket.entity.Ticket;
 import com.example.app.ticket.entity.TicketStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.repository.query.Param;
 import org.springframework.data.jpa.repository.Query;
 
 import java.time.LocalDateTime;
@@ -17,6 +18,12 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
 
 	interface CategoryCountProjection {
 		String getName();
+
+		Long getCount();
+	}
+
+	interface AssigneeCountProjection {
+		Long getAssigneeId();
 
 		Long getCount();
 	}
@@ -42,4 +49,27 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
 
 	@Query("select t.category.name as name, count(t) as count from Ticket t group by t.category.id, t.category.name order by t.category.name")
 	List<CategoryCountProjection> countTicketsByCategory();
+
+	@Query("""
+		select t.assignee.id as assigneeId, count(t) as count
+		from Ticket t
+		where t.assignee.id in :assigneeIds and t.status <> :closedStatus
+		group by t.assignee.id
+	""")
+	List<AssigneeCountProjection> countActiveTicketsByAssigneeIds(
+		@Param("assigneeIds") List<Long> assigneeIds,
+		@Param("closedStatus") TicketStatus closedStatus
+	);
+
+	@Query("""
+		select t.assignee.id as assigneeId, count(t) as count
+		from Ticket t
+		where t.assignee.id in :assigneeIds and t.status <> :closedStatus and t.dueAt is not null and t.dueAt < :now
+		group by t.assignee.id
+	""")
+	List<AssigneeCountProjection> countOverdueOpenTicketsByAssigneeIds(
+		@Param("assigneeIds") List<Long> assigneeIds,
+		@Param("closedStatus") TicketStatus closedStatus,
+		@Param("now") LocalDateTime now
+	);
 }

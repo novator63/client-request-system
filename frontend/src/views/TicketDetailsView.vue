@@ -17,6 +17,9 @@ const {
   deleting,
   ticket,
   categories,
+  operators,
+  operatorsLoading,
+  operatorsLoadError,
   notFound,
   editMode,
   editStatus,
@@ -28,13 +31,23 @@ const {
   canEdit,
   ticketAuthorLabel,
   ticketAssigneeLabel,
+  selectedEditAssigneeLabel,
   loadTicket,
+  reloadOperators,
   enterEditMode,
   cancelEdit,
   saveChanges,
   closeTicket,
   deleteTicket,
 } = useTicketDetails({ route, router, authStore })
+
+const formatOperatorOptionLabel = (operator) => {
+  const activeTicketsCount = Number(operator?.activeTicketsCount) || 0
+  const overdueTicketsCount = Number(operator?.overdueTicketsCount) || 0
+
+  return `${operator.fullName} (${operator.email}) — активных: ${activeTicketsCount}, просроченных: ${overdueTicketsCount}`
+}
+
 const ticketStatus = computed(() => ticket.value?.status)
 const isTicketClosed = computed(() => isClosedTicketStatus(ticketStatus.value))
 const {
@@ -233,12 +246,45 @@ onBeforeUnmount(() => {
 
               <el-form-item label="Ответственный">
                 <template v-if="editMode">
-                  <el-input-number
-                    v-model="editAssigneeId"
-                    :min="0"
-                    placeholder="ID пользователя (0 - не назначен)"
-                    :disabled="deleting"
-                  />
+                  <div class="assignee-field">
+                    <el-select
+                      v-model="editAssigneeId"
+                      placeholder="Выберите оператора"
+                      :loading="operatorsLoading"
+                      :disabled="deleting || operatorsLoading"
+                      :clearable="ticket.assigneeId === null"
+                    >
+                      <el-option
+                        :label="'Не назначен'"
+                        :value="null"
+                        :disabled="ticket.assigneeId !== null"
+                      />
+                      <el-option
+                        v-for="operator in operators"
+                        :key="operator.id"
+                        :label="formatOperatorOptionLabel(operator)"
+                        :value="operator.id"
+                      />
+                    </el-select>
+                    <el-alert
+                      v-if="operatorsLoadError"
+                      :title="operatorsLoadError"
+                      type="error"
+                      show-icon
+                      :closable="false"
+                    />
+                    <el-button
+                      v-if="operatorsLoadError"
+                      text
+                      size="small"
+                      :loading="operatorsLoading"
+                      :disabled="deleting"
+                      @click="reloadOperators"
+                    >
+                      Повторить загрузку
+                    </el-button>
+                    <span class="assignee-selected-hint">Выбрано: {{ selectedEditAssigneeLabel }}</span>
+                  </div>
                 </template>
                 <template v-else>
                   <span>{{ ticketAssigneeLabel }}</span>
@@ -422,6 +468,17 @@ onBeforeUnmount(() => {
   border-radius: 6px;
   padding: 20px;
   background-color: var(--el-fill-color-light);
+}
+
+.assignee-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.assignee-selected-hint {
+  font-size: 13px;
+  color: var(--el-text-color-secondary);
 }
 
 .section-header {

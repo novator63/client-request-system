@@ -9,8 +9,9 @@ import {
   updateTicketClassificationApi,
   updateTicketStatusApi,
 } from '../api/tickets.api'
+import { getAvailableOperatorsApi } from '../api/users.api'
 import { isClosedTicketStatus, USER_ROLES } from '../constants/ticket.constants'
-import { notifyApiError, notifySuccess } from '../utils/errorHandler'
+import { notifyApiError, notifySuccess, parseApiError } from '../utils/errorHandler'
 
 export const useTicketDetails = ({ route, router, authStore }) => {
   const loading = ref(false)
@@ -18,6 +19,9 @@ export const useTicketDetails = ({ route, router, authStore }) => {
   const deleting = ref(false)
   const ticket = ref(null)
   const categories = ref([])
+  const operators = ref([])
+  const operatorsLoading = ref(false)
+  const operatorsLoadError = ref('')
   const notFound = ref(false)
   const editMode = ref(false)
 
@@ -27,6 +31,7 @@ export const useTicketDetails = ({ route, router, authStore }) => {
   const editAssigneeId = ref(null)
   let loadTicketPromise = null
   let categoriesLoaded = false
+  let operatorsLoaded = false
 
   const ticketId = computed(() => route.params.id)
   const isAdmin = computed(() => authStore.user?.role === USER_ROLES.ADMIN)
@@ -44,7 +49,37 @@ export const useTicketDetails = ({ route, router, authStore }) => {
       return '—'
     }
 
-    return ticket.value.assigneeName || (ticket.value.assigneeId ? `ID: ${ticket.value.assigneeId}` : 'Не назначен')
+    if (ticket.value.assigneeName) {
+      return ticket.value.assigneeName
+    }
+
+    if (ticket.value.assigneeId) {
+      const selectedOperator = operators.value.find((operator) => operator.id === ticket.value.assigneeId)
+      if (selectedOperator?.fullName) {
+        return selectedOperator.fullName
+      }
+
+      return `ID: ${ticket.value.assigneeId}`
+    }
+
+    return 'Не назначен'
+  })
+
+  const selectedEditAssigneeLabel = computed(() => {
+    if (editAssigneeId.value == null) {
+      return 'Не назначен'
+    }
+
+    const selectedOperator = operators.value.find((operator) => operator.id === editAssigneeId.value)
+    if (selectedOperator?.fullName && selectedOperator?.email) {
+      return `${selectedOperator.fullName} (${selectedOperator.email})`
+    }
+
+    if (selectedOperator?.fullName) {
+      return selectedOperator.fullName
+    }
+
+    return `ID: ${editAssigneeId.value}`
   })
 
   const loadCategories = async () => {
@@ -61,6 +96,56 @@ export const useTicketDetails = ({ route, router, authStore }) => {
     }
   }
 
+  const toNumberOrZero = (value) => {
+    const numericValue = Number(value)
+    return Number.isFinite(numericValue) ? numericValue : 0
+  }
+
+  const sortOperatorsByWorkload = (items = []) => {
+    return [...items].sort((left, right) => {
+      const leftOverdue = toNumberOrZero(left?.overdueTicketsCount)
+      const rightOverdue = toNumberOrZero(right?.overdueTicketsCount)
+      if (leftOverdue !== rightOverdue) {
+        return leftOverdue - rightOverdue
+      }
+
+      const leftActive = toNumberOrZero(left?.activeTicketsCount)
+      const rightActive = toNumberOrZero(right?.activeTicketsCount)
+      if (leftActive !== rightActive) {
+        return leftActive - rightActive
+      }
+
+      return String(left?.fullName || '').localeCompare(String(right?.fullName || ''), 'ru')
+    })
+  }
+
+  const loadOperators = async () => {
+    if (operatorsLoaded || !isAdmin.value) {
+      return
+    }
+
+    operatorsLoading.value = true
+    operatorsLoadError.value = ''
+
+    try {
+      operators.value = sortOperatorsByWorkload(await getAvailableOperatorsApi())
+      operatorsLoaded = true
+    } catch (error) {
+      operators.value = []
+      operatorsLoaded = false
+      operatorsLoadError.value = parseApiError(error, {
+        fallbackMessage: 'Не удалось загрузить список операторов',
+      })
+    } finally {
+      operatorsLoading.value = false
+    }
+  }
+
+  const reloadOperators = async () => {
+    operatorsLoaded = false
+    await loadOperators()
+  }
+
   const loadTicket = async () => {
     if (loadTicketPromise) {
       return loadTicketPromise
@@ -74,7 +159,7 @@ export const useTicketDetails = ({ route, router, authStore }) => {
         ticket.value = await getTicketByIdApi(ticketId.value)
 
         if (isAdmin.value) {
-          await loadCategories()
+          await Promise.all([loadCategories(), loadOperators()])
         }
       } catch (error) {
         if (error.response?.status === 404) {
@@ -129,6 +214,8 @@ export const useTicketDetails = ({ route, router, authStore }) => {
     }
 
     updating.value = true
+    const assigneeChanged = isAdmin.value && editAssigneeId.value !== ticket.value.assigneeId
+    const assigneeSuccessLabel = selectedEditAssigneeLabel.value
 
     try {
       if (editStatus.value !== ticket.value.status) {
@@ -148,7 +235,11 @@ export const useTicketDetails = ({ route, router, authStore }) => {
 
       await loadTicket()
       editMode.value = false
-      notifySuccess('Заявка успешно обновлена')
+      notifySuccess(
+        assigneeChanged
+          ? `Ответственный выбран: ${assigneeSuccessLabel}`
+          : 'Заявка успешно обновлена',
+      )
     } catch (error) {
       notifyApiError(error, {
         fallbackMessage: 'Ошибка при обновлении заявки',
@@ -225,6 +316,9 @@ export const useTicketDetails = ({ route, router, authStore }) => {
     deleting,
     ticket,
     categories,
+    operators,
+    operatorsLoading,
+    operatorsLoadError,
     notFound,
     editMode,
     editStatus,
@@ -236,7 +330,9 @@ export const useTicketDetails = ({ route, router, authStore }) => {
     canEdit,
     ticketAuthorLabel,
     ticketAssigneeLabel,
+    selectedEditAssigneeLabel,
     loadTicket,
+    reloadOperators,
     enterEditMode,
     cancelEdit,
     saveChanges,

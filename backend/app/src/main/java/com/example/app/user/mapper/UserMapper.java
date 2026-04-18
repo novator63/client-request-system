@@ -1,6 +1,7 @@
 package com.example.app.user.mapper;
 
 import com.example.app.user.dto.response.UserListItemResponse;
+import com.example.app.user.dto.response.OperatorOptionResponse;
 import com.example.app.user.dto.response.UserResponse;
 import com.example.app.user.entity.User;
 import org.springframework.stereotype.Component;
@@ -24,6 +25,16 @@ public class UserMapper {
 			user.getEmail(),
 			user.getFullName(),
 			user.getRole()
+		);
+	}
+
+	public OperatorOptionResponse toOperatorOptionResponse(User user, long activeTicketsCount, long overdueTicketsCount) {
+		return new OperatorOptionResponse(
+			user.getId(),
+			user.getFullName(),
+			user.getEmail(),
+			activeTicketsCount,
+			overdueTicketsCount
 		);
 	}
 }
