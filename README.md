@@ -1,48 +1,81 @@
 # Client Request System
 
-## Run Everything With Docker Compose
+Веб-приложение для работы с заявками. В одном `docker-compose.yml` поднимаются:
 
-This repository includes a single `docker-compose.yml` that starts:
-- PostgreSQL database (with persistent volume)
-- Spring Boot backend (Flyway migrations run automatically on startup)
-- Vue frontend (served by Nginx)
+- PostgreSQL с постоянным volume для данных
+- Spring Boot backend с автоматическим запуском Flyway-миграций
+- Vue frontend, который отдаётся через Nginx
 
-### 1. Prepare environment variables
+## Быстрый старт
 
-Create a local `.env` file from the template:
+### 1. Подготовьте окружение
+
+Скопируйте шаблон переменных окружения:
 
 ```sh
 cp .env.example .env
 ```
 
-You can keep default values for local/demo runs, or edit them in `.env`.
+Для локального запуска можно оставить значения по умолчанию. В этом проекте они уже подходят для compose-конфига:
 
-### 2. Build and run
+- `POSTGRES_DB=client_request_system`
+- `POSTGRES_USER=postgres`
+- `POSTGRES_PASSWORD=postgres`
+- `BACKEND_PORT=8081`
+- `FRONTEND_PORT=8082`
+- `APP_JWT_SECRET=change-me-change-me-change-me-change-me-1234567890`
+
+Если меняете `BACKEND_PORT`, проверьте `VITE_API_BASE_URL`, чтобы frontend смотрел на правильный адрес backend.
+
+### 2. Запустите приложение
 
 ```sh
 docker compose up --build -d
 ```
 
-### 3. Open the app
+### 3. Проверьте, что сервисы поднялись
 
-- Frontend: http://localhost
-- Backend API: http://localhost:8080/api
+```sh
+docker compose ps
+```
+
+После старта откройте:
+
+- Frontend: http://localhost:8082
+- Backend API: http://localhost:8081/api
 - PostgreSQL: localhost:5432
 
-### 4. Stop services
+### 4. Как проверить работу приложения
+
+1. Откройте страницу входа и убедитесь, что фронтенд загружается без ошибок.
+2. Авторизуйтесь с тестовой учетной записью, которая создаётся Flyway-миграциями. В базе есть, как минимум, такие пользователи:
+	- `admin@example.com`
+	- `operator@example.com`
+	- `client@example.com`
+3. После входа проверьте, что доступны основные разделы:
+	- список заявок `/tickets`
+	- создание заявки `/tickets/create`
+	- карточка заявки `/tickets/:id`
+	- отчёты `/reports` для роли `ADMIN`
+4. При необходимости проверьте backend напрямую, например через браузер или API-клиент, по адресу `http://localhost:8081/api`.
+
+## Остановка
+
+Остановить сервисы:
 
 ```sh
 docker compose down
 ```
 
-To also remove database data:
+Чтобы удалить ещё и данные PostgreSQL:
 
 ```sh
 docker compose down -v
 ```
 
-## Notes
+## Полезные заметки
 
-- DB schema and seed data are managed by Flyway scripts located in `backend/app/src/main/resources/db/migration`.
-- Frontend API URL is set at build time via `VITE_API_BASE_URL` from `.env`.
-- For production use, change `APP_JWT_SECRET` in `.env`.
+- Схема базы и тестовые данные находятся в `backend/app/src/main/resources/db/migration`.
+- Backend использует context path `/api`.
+- Frontend получает адрес API на этапе сборки через `VITE_API_BASE_URL`.
+- Для продакшена обязательно замените `APP_JWT_SECRET` на собственный секрет.
